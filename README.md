@@ -151,8 +151,6 @@ flask db upgrade
 
 ## License
 
-[MIT License] (or your preferred license)
+[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)
 
 ---
-
-Let me know if you want to add screenshots, deployment instructions, or any other custom sections! 
