@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Employee Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="mb-0">{{ employee_name }} Dashboard</h2>
+        <a href="/logout" class="btn btn-outline-danger">Log Out</a>
+    </div>
+    <div class="mb-4">
+        <a href="{{ url_for('employee.clients') }}" class="btn btn-primary">My Clients</a>
+        <button type="button" class="btn btn-info" id="openRemindersModal">My Reminders</button>
+        <button type="button" class="btn btn-warning" id="openAnalyticsModal">Analytics</button>
+    </div>
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-bg-light mb-3 dashboard-card" id="totalClientsCard" style="cursor:pointer;">
+                <div class="card-header">Total Clients</div>
+                <div class="card-body"><h4>{{ total_clients }}</h4></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-light mb-3 dashboard-card" id="visitsScheduledCard" style="cursor:pointer;">
+                <div class="card-header">Visits Scheduled</div>
+                <div class="card-body"><h4>{{ visits_scheduled }}</h4></div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-bg-light mb-3 dashboard-card" id="bookedCard" style="cursor:pointer;">
+                <div class="card-header">Booked</div>
+                <div class="card-body"><h4>{{ booked }}</h4></div>
+            </div>
+        </div>
+    </div>
+    <h4>Upcoming Reminders</h4>
+    <table class="table table-bordered" id="remindersTable">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Name</th>
+                <th>Remind At</th>
+                <th>Message</th>
+                <th style="width:40px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for reminder in reminders %}
+            <tr class="reminder-row" data-reminder-id="{{ reminder.id }}">
+                <td>{% set client = reminder.client_id|default(None) and namespace() %}{{ client.name if client else '' }}</td>
+                <td>{{ reminder.remind_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>{{ reminder.message }}</td>
+                <td><button class="btn btn-sm btn-link text-danger delete-reminder-btn" title="Delete">&times;</button></td>
+            </tr>
+        {% else %}
+            <tr><td colspan="4">No upcoming reminders.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modals for dashboard cards -->
+<div class="modal fade" id="clientsModal" tabindex="-1" aria-labelledby="clientsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="clientsModalLabel">Client Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-bordered" id="clientsModalTable">
+          <thead>
+            <tr id="clientsModalTableHeader">
+              <th>Date</th>
+              <th>Name</th>
+              <th>Phone</th>
+              <th>Budget</th>
+              <th>Area</th>
+              <th>Preferred Building</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reminders Modal -->
+<div class="modal fade" id="remindersModal" tabindex="-1" aria-labelledby="remindersModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="remindersModalLabel">My Reminders</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-bordered" id="remindersTable">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Remind At</th>
+                    <th>Message</th>
+                    <th style="width:40px;"></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Status Confirmation Modal -->
+<div class="modal fade" id="statusConfirmModal" tabindex="-1" aria-labelledby="statusConfirmModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="statusConfirmModalLabel">Update Client Status</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p id="statusConfirmText"></p>
+        <div class="d-flex justify-content-between">
+          <button class="btn btn-success" id="statusAgreedBtn">Agreed</button>
+          <button class="btn btn-danger" id="statusDisagreedBtn">Disagreed</button>
+          <button class="btn btn-secondary" id="statusCustomBtn">Custom</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Analytics Modal -->
+<div class="modal fade" id="analyticsModal" tabindex="-1" aria-labelledby="analyticsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="analyticsModalLabel">Employee Performance Analytics</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="chartType" class="form-label">Chart Type:</label>
+          <select id="chartType" class="form-select" style="width:auto;display:inline-block;">
+            <option value="bar">Bar</option>
+            <option value="pie">Pie</option>
+          </select>
+        </div>
+        <canvas id="performanceChart" height="120"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+.reminder-row {
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.reminder-row:hover {
+  transform: scale(1.025);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  background: #f8f9fa;
+}
+.delete-reminder-btn {
+  font-size: 1.2em;
+  line-height: 1;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+.delete-reminder-btn:focus {
+  outline: none;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function populateClientsModal(data, type) {
+  var tbody = $('#clientsModalTable tbody');
+  var header = $('#clientsModalTableHeader');
+  tbody.empty();
+  if (type === 'visits') {
+    header.html('<th>Date</th><th>Visit Date/Time</th><th>Name</th><th>Phone</th><th>Budget</th><th>Area</th><th>Preferred Building</th><th>Status</th>');
+    if (data.length === 0) {
+      tbody.append('<tr><td colspan="8">No clients found.</td></tr>');
+    } else {
+      data.forEach(function(client) {
+        tbody.append('<tr>' +
+          '<td>' + (client.date || '-') + '</td>' +
+          '<td>' + (client.visit_time || '-') + '</td>' +
+          '<td>' + client.name + '</td>' +
+          '<td>' + client.phone + '</td>' +
+          '<td>' + client.budget + '</td>' +
+          '<td>' + client.area + '</td>' +
+          '<td>' + client.preferred_building + '</td>' +
+          '<td>' + client.status + '</td>' +
+          '</tr>');
+      });
+    }
+  } else {
+    header.html('<th>Date</th><th>Name</th><th>Phone</th><th>Budget</th><th>Area</th><th>Preferred Building</th><th>Status</th>');
+    if (data.length === 0) {
+      tbody.append('<tr><td colspan="7">No clients found.</td></tr>');
+    } else {
+      data.forEach(function(client) {
+        tbody.append('<tr>' +
+          '<td>' + (client.date || '-') + '</td>' +
+          '<td>' + client.name + '</td>' +
+          '<td>' + client.phone + '</td>' +
+          '<td>' + client.budget + '</td>' +
+          '<td>' + client.area + '</td>' +
+          '<td>' + client.preferred_building + '</td>' +
+          '<td>' + client.status + '</td>' +
+          '</tr>');
+      });
+    }
+  }
+}
+$('#totalClientsCard').on('click', function() {
+  $.getJSON('/employee/clients/all/json', function(data) {
+    $('#clientsModalLabel').text('All Clients');
+    populateClientsModal(data, 'all');
+    $('#clientsModal').modal('show');
+  });
+});
+$('#visitsScheduledCard').on('click', function() {
+  $.getJSON('/employee/clients/visits_scheduled/json', function(data) {
+    $('#clientsModalLabel').text('Visits Scheduled');
+    populateClientsModal(data, 'visits');
+    $('#clientsModal').modal('show');
+  });
+});
+$('#bookedCard').on('click', function() {
+  $.getJSON('/employee/clients/booked/json', function(data) {
+    $('#clientsModalLabel').text('Booked Clients');
+    populateClientsModal(data, 'all');
+    $('#clientsModal').modal('show');
+  });
+});
+// Update reminders table with client names via AJAX
+function updateRemindersTable() {
+  $.getJSON('/employee/reminders/upcoming/json', function(data) {
+    var tbody = $('#remindersTable tbody');
+    tbody.empty();
+    if (data.length === 0) {
+      tbody.append('<tr><td colspan="5">No upcoming reminders.</td></tr>');
+    } else {
+      data.forEach(function(reminder) {
+        tbody.append('<tr class="reminder-row" data-reminder-id="' + reminder.reminder_id + '">' +
+          '<td>' + (reminder.date || '-') + '</td>' +
+          '<td>' + (reminder.client_name || '-') + '</td>' +
+          '<td>' + reminder.remind_at + '</td>' +
+          '<td>' + reminder.message + '</td>' +
+          '<td><button class="btn btn-sm btn-link text-danger delete-reminder-btn" title="Delete">&times;</button></td>' +
+          '</tr>');
+      });
+    }
+  });
+}
+// Call updateRemindersTable on page load
+$(function() { updateRemindersTable(); });
+var pendingReminder = null;
+$('#remindersTable').on('click', '.delete-reminder-btn', function() {
+  var row = $(this).closest('tr');
+  var reminderId = row.data('reminder-id');
+  $.post('/employee/reminders/mark_done/' + reminderId, function() {
+    row.fadeOut(200, function() { $(this).remove(); });
+    updateDashboardRemindersTable();
+  });
+});
+function handleStatusUpdate(statusText) {
+  if (!pendingReminder) return;
+  // Get client ID via AJAX (since it's not in the row, fetch from reminder ID)
+  $.getJSON('/employee/reminders/upcoming/json', function(reminders) {
+    var reminder = reminders.find(function(r) { return r.remind_at === pendingReminder.remindAt && r.client_name === pendingReminder.clientName; });
+    if (reminder && reminder.client_id) {
+      $.post('/employee/clients/update_status/' + reminder.client_id, { status: statusText }, function() {
+        // Mark reminder as done
+        $.post('/employee/reminders/mark_done/' + pendingReminder.reminderId, function() {
+          pendingReminder.row.fadeOut(200, function() { $(this).remove(); });
+          updateDashboardRemindersTable();
+          $('#statusConfirmModal').modal('hide');
+          pendingReminder = null;
+        });
+      });
+    } else {
+      alert('Could not find client to update status.');
+      $('#statusConfirmModal').modal('hide');
+      pendingReminder = null;
+    }
+  });
+}
+$('#statusAgreedBtn').on('click', function() { handleStatusUpdate('Agreed'); });
+$('#statusDisagreedBtn').on('click', function() { handleStatusUpdate('Disagreed'); });
+$('#statusCustomBtn').on('click', function() {
+  var customStatus = prompt('Enter custom status:');
+  if (customStatus && customStatus.trim() !== '') {
+    handleStatusUpdate(customStatus.trim());
+  }
+});
+$('#openRemindersModal').on('click', function() {
+  updateRemindersTable();
+  $('#remindersModal').modal('show');
+});
+$('#openAnalyticsModal').on('click', function() {
+  $('#analyticsModal').modal('show');
+  loadPerformanceChart($('#chartType').val());
+});
+$('#chartType').on('change', function() {
+  loadPerformanceChart($(this).val());
+});
+var performanceChart = null;
+function loadPerformanceChart(type) {
+  $.getJSON('/employee/analytics/performance', function(data) {
+    var ctx = document.getElementById('performanceChart').getContext('2d');
+    if (performanceChart) performanceChart.destroy();
+    var chartData = {
+      labels: data.labels,
+      datasets: [{
+        label: 'Clients Handled',
+        data: data.values,
+        backgroundColor: [
+          'rgba(54, 162, 235, 0.7)',
+          'rgba(255, 206, 86, 0.7)',
+          'rgba(75, 192, 192, 0.7)',
+          'rgba(255, 99, 132, 0.7)',
+          'rgba(153, 102, 255, 0.7)',
+          'rgba(255, 159, 64, 0.7)'
+        ]
+      }]
+    };
+    var config = {
+      type: type,
+      data: chartData,
+      options: {responsive: true}
+    };
+    performanceChart = new Chart(ctx, config);
+  });
+}
+</script>
+</body>
+</html> 
