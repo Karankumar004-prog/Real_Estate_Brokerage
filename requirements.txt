@@ -5,3 +5,4 @@ bcrypt
 cryptography
 pandas
 Flask-Mail 
+flask_migrate
