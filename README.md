@@ -84,23 +84,19 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Initialize the Database
-
-```bash
-flask db init
-flask db migrate
-flask db upgrade
-```
-
-> The SQLite database will be created at `instance/real_estate.db`.
-
-### 5. Run the Application
+### 4. Run the Application
 
 ```bash
 python run.py
 ```
 
-The app will be available at [http://127.0.0.1:5000] or (https://127.0.0.1:5000).
+## 5. After project starts running
+
+Go to the link and type /login to get login page (ex. http://127.0.0.1:5000/login)
+Either you can register for admin or employee else
+For Admin
+Username: Admin
+Password: aka123
 
 ## Usage Notes
 
