@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
-from .models import User, log_activity
+from .models import User, log_activity, Notification
 from . import db, login_manager
 from functools import wraps
 import os
@@ -30,6 +30,12 @@ def login():
         password = request.form['password']
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
+            if user.status == 'pending':
+                flash('Your admin registration is still pending approval.')
+                return render_template('login.html')
+            if user.status == 'terminated':
+                flash('Your admin registration was denied. Permission is terminated.')
+                return render_template('login.html')
             if not user.is_active:
                 flash('Your account has been deactivated.')
                 return render_template('login.html')
@@ -103,9 +109,32 @@ def register():
                 user.aadhaar_number = aadhaar_number
             if aadhaar_image_file and aadhaar_image_file.filename:
                 user.aadhaar_image = relative_image_path
+            # Set status and notification logic
+            if role == 'admin':
+                user.status = 'pending'
+                notif_msg = f"{username} trying to register as an Admin. Authorization is valid?"
+                notif_type = 'admin_pending'
+            else:
+                user.status = 'approved'
+                notif_msg = f"{username} has registered as an Employee"
+                notif_type = 'employee_registered'
             db.session.add(user)
             db.session.commit()
+            # Find superadmin (Admin1)
+            superadmin = User.query.filter_by(username='Admin1', role='admin').first()
+            if superadmin:
+                notification = Notification(
+                    message=notif_msg,
+                    type=notif_type,
+                    user_id=user.id
+                )
+                db.session.add(notification)
+                db.session.commit()
             log_activity(user, 'register', 'User registered successfully')
-            flash('Registration successful')
-            return redirect(url_for('auth.login'))
+            if role == 'admin':
+                flash('Registration request submitted. Awaiting superadmin approval.')
+                return redirect(url_for('auth.login'))
+            else:
+                flash('Registration successful')
+                return redirect(url_for('auth.login'))
     return render_template('register.html') 

@@ -16,6 +16,7 @@ class User(UserMixin, db.Model):
     joining_date = db.Column(db.Date)
     leaving_date = db.Column(db.Date)
     is_active = db.Column(db.Boolean, default=True)
+    status = db.Column(db.String(20), default='approved')  # 'pending', 'approved', 'terminated'
     clients = db.relationship('Client', backref='employee', lazy=True)
 
     def set_password(self, password):
@@ -57,6 +58,14 @@ class ActivityLog(db.Model):
     username = db.Column(db.String(80))
     action = db.Column(db.String(50), nullable=False)
     details = db.Column(db.Text)  # Optional JSON/text for extra info
+    timestamp = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    message = db.Column(db.String(255), nullable=False)
+    type = db.Column(db.String(50))  # e.g. 'employee_registered', 'admin_pending'
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # Who triggered the notification
+    status = db.Column(db.String(20), default='unread')  # 'unread', 'read'
     timestamp = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
 def log_activity(user, action, details=None):

@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, jsonify, request, send_file
-from flask_login import login_required
+from flask_login import login_required, current_user
 from .auth import admin_required
-from .models import db, User, Client, Partner, ActivityLog
+from .models import db, User, Client, Partner, ActivityLog, Notification
 import io
 import csv
 from sqlalchemy import func, desc
@@ -364,8 +364,13 @@ def update_admin():
         else:
             user.leaving_date = leaving_date
     password = request.form.get('password')
-    if password:
-        user.set_password(password)
+    # Only Admin1 can change their own password
+    if user.username == 'Admin1':
+        if current_user.username == 'Admin1' and password:
+            user.set_password(password)
+    else:
+        if password:
+            user.set_password(password)
     # Aadhaar image upload
     if 'aadhaar_image' in request.files and request.files['aadhaar_image'].filename:
         from werkzeug.utils import secure_filename
@@ -420,3 +425,57 @@ def activity_logs_json():
         }
         for log in logs
     ])
+
+@admin_bp.route('/notifications', methods=['GET'])
+@admin_required
+def get_notifications():
+    if not current_user.username == 'Admin1':
+        return jsonify({'error': 'Unauthorized'}), 403
+    notifications = Notification.query.order_by(Notification.timestamp.desc()).all()
+    notif_list = [
+        {
+            'id': n.id,
+            'message': n.message,
+            'type': n.type,
+            'user_id': n.user_id,
+            'status': n.status,
+            'timestamp': n.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        } for n in notifications
+    ]
+    return jsonify(notif_list)
+
+@admin_bp.route('/notifications/approve', methods=['POST'])
+@admin_required
+def approve_admin():
+    if not current_user.username == 'Admin1':
+        return jsonify({'error': 'Unauthorized'}), 403
+    notif_id = request.form.get('notif_id')
+    notification = Notification.query.get(notif_id)
+    if not notification or notification.type != 'admin_pending':
+        return jsonify({'error': 'Invalid notification'}), 400
+    user = User.query.get(notification.user_id)
+    if not user or user.status != 'pending':
+        return jsonify({'error': 'Invalid user'}), 400
+    user.status = 'approved'
+    notification.message = f"{user.username} Registered as Admin"
+    notification.status = 'read'
+    db.session.commit()
+    return jsonify({'success': True})
+
+@admin_bp.route('/notifications/deny', methods=['POST'])
+@admin_required
+def deny_admin():
+    if not current_user.username == 'Admin1':
+        return jsonify({'error': 'Unauthorized'}), 403
+    notif_id = request.form.get('notif_id')
+    notification = Notification.query.get(notif_id)
+    if not notification or notification.type != 'admin_pending':
+        return jsonify({'error': 'Invalid notification'}), 400
+    user = User.query.get(notification.user_id)
+    if not user or user.status != 'pending':
+        return jsonify({'error': 'Invalid user'}), 400
+    user.status = 'terminated'
+    notification.message = f"{user.username} Permission is Terminated"
+    notification.status = 'read'
+    db.session.commit()
+    return jsonify({'success': True})

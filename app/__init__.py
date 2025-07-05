@@ -13,6 +13,16 @@ mail = Mail()
 migrate = Migrate()
 
 
+def create_superadmin(app):
+    from .models import User, db
+    with app.app_context():
+        if not User.query.filter_by(username='Admin1', role='admin').first():
+            user = User(username='Admin1', role='admin', status='approved')
+            user.set_password('aka123')
+            db.session.add(user)
+            db.session.commit()
+
+
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = 'your-secret-key'
@@ -49,5 +59,8 @@ def create_app():
             response.headers['Pragma'] = 'no-cache'
             response.headers['Expires'] = '0'
         return response
+
+    # Call superadmin creation here
+    create_superadmin(app)
 
     return app 
