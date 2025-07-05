@@ -87,7 +87,7 @@ pip install -r requirements.txt
 ### 4. Run the Application
 
 ```bash
-python run.py
+python3 run.py
 ```
 
 ## 5. After project starts running
@@ -95,8 +95,9 @@ python run.py
 Go to the link and type /login to get login page (ex. http://127.0.0.1:5000/login)
 Either you can register for admin or employee else
 For Admin
-Username: Admin
+Username: Admin1
 Password: aka123
+Note: 'Admin1' is a super admin no one can else can see the notification panel and Change its password.
 
 ## Usage Notes
 
