@@ -73,23 +73,6 @@ def register():
         address = request.form.get('address')
         aadhaar_number = request.form.get('aadhaar_number')
         aadhaar_image_file = request.files.get('aadhaar_image')
-        # Only username is required
-        if not username:
-            flash('Username is required.')
-            return render_template('register.html')
-        # Validate Aadhaar image extension if file is provided
-        allowed_exts = current_app.config['ALLOWED_EXTENSIONS']
-        image_path = None
-        if aadhaar_image_file and aadhaar_image_file.filename:
-            filename = secure_filename(aadhaar_image_file.filename)
-            if '.' not in filename or filename.rsplit('.', 1)[1].lower() not in allowed_exts:
-                flash('Invalid Aadhaar image format.')
-                return render_template('register.html')
-            upload_folder = current_app.config['UPLOAD_FOLDER']
-            os.makedirs(upload_folder, exist_ok=True)
-            image_path = os.path.join(upload_folder, filename)
-            aadhaar_image_file.save(image_path)
-            relative_image_path = os.path.relpath(image_path, start=os.path.dirname(current_app.instance_path))
         # Check for existing user
         if User.query.filter_by(username=username).first():
             flash('Username already exists.')

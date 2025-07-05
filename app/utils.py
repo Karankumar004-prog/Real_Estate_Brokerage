@@ -5,8 +5,6 @@ def generate_encryption_key():
     return Fernet.generate_key()
 
 def export_to_csv(queryset, output):
-    # Export SQLAlchemy queryset to CSV using a file-like object, matching dashboard columns and formatting
-    from .utils import format_budget
     rows = []
     for item in queryset:
         rows.append({
