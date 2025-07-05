@@ -181,7 +181,6 @@
                   <th>Email</th>
                   <th>Address</th>
                   <th>Aadhaar No.</th>
-                  <th>Aadhaar Image</th>
                   <th>Joining Date</th>
                   <th>Leaving Date</th>
                   <th>Clients <span class="text-muted" style="font-size:0.9em;">(click row)</span></th>
@@ -219,7 +218,6 @@
               <th>Email</th>
               <th>Address</th>
               <th>Aadhaar No.</th>
-              <th>Aadhaar Image</th>
               <th>Joining Date</th>
               <th>Leaving Date</th>
               <th>Status</th>
@@ -268,14 +266,6 @@
             <input type="text" class="form-control" id="editAdminAadhaarNumber" name="aadhaar_number">
           </div>
           <div class="mb-3">
-            <label for="editAdminAadhaarImage" class="form-label">Aadhaar Image</label>
-            <input type="file" class="form-control" id="editAdminAadhaarImage" name="aadhaar_image" accept="image/*">
-            <button type="button" class="btn btn-info mt-2" id="previewAdminAadhaarBtn">Preview</button>
-            <div class="mt-2">
-              <img id="editAdminAadhaarImagePreview" src="#" alt="Aadhaar Preview" style="max-width:200px; display:none;" />
-            </div>
-          </div>
-          <div class="mb-3">
             <label for="editAdminJoiningDate" class="form-label">Joining Date</label>
             <input type="date" class="form-control" id="editAdminJoiningDate" name="joining_date">
           </div>
@@ -293,25 +283,6 @@
     </div>
   </div>
 </div>
-
-<!-- Collapsible client list row template -->
-<script type="text/template" id="employeeClientsRowTemplate">
-  <tr class="client-list-row" style="display:none;">
-    <td colspan="8">
-      <div class="p-2">
-        <strong>Clients:</strong>
-        <table class="table table-sm table-bordered mt-2 mb-0">
-          <thead><tr><th>ID</th><th>Name</th><th>Phone</th><th>Status</th><th>Preferred Building</th></tr></thead>
-          <tbody>
-            <% clients.forEach(function(client) { %>
-              <tr><td><%= client.id %></td><td><%= client.name %></td><td><%= client.phone %></td><td><%= client.status %></td><td><%= client.preferred_building || '-' %></td></tr>
-            <% }); %>
-          </tbody>
-        </table>
-      </div>
-    </td>
-  </tr>
-</script>
 
 <!-- Edit Employee Modal -->
 <div class="modal fade" id="editEmployeeModal" tabindex="-1" aria-labelledby="editEmployeeModalLabel" aria-hidden="true">
@@ -345,14 +316,6 @@
             <input type="text" class="form-control" id="editEmployeeAadhaarNumber" name="aadhaar_number">
           </div>
           <div class="mb-3">
-            <label for="editEmployeeAadhaarImage" class="form-label">Aadhaar Image</label>
-            <input type="file" class="form-control" id="editEmployeeAadhaarImage" name="aadhaar_image" accept="image/*">
-            <button type="button" class="btn btn-info mt-2" id="previewEmployeeAadhaarBtn">Preview</button>
-            <div class="mt-2">
-              <img id="editAadhaarImagePreview" src="#" alt="Aadhaar Preview" style="max-width:200px; display:none;" />
-            </div>
-          </div>
-          <div class="mb-3">
             <label for="editEmployeeJoiningDate" class="form-label">Joining Date</label>
             <input type="date" class="form-control" id="editEmployeeJoiningDate" name="joining_date">
           </div>
@@ -366,21 +329,6 @@
           </div>
           <button type="submit" class="btn btn-primary">Save Changes</button>
         </form>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Add modal for Aadhaar image preview -->
-<div class="modal fade" id="aadhaarPreviewModal" tabindex="-1" aria-labelledby="aadhaarPreviewModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="aadhaarPreviewModalLabel">Aadhaar Image Preview</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body text-center">
-        <img id="aadhaarPreviewImg" src="" alt="Aadhaar Image" style="max-width:100%;max-height:400px;">
       </div>
     </div>
   </div>
@@ -455,7 +403,6 @@ $('#employeesCard').off('click').on('click', function() {
         tr.append('<td>' + (emp.email || '-') + '</td>');
         tr.append('<td>' + (emp.address || '-') + '</td>');
         tr.append('<td>' + (emp.aadhaar_number || '-') + '</td>');
-        tr.append('<td>' + '<button class="btn btn-sm btn-info preview-aadhaar-btn" data-img="' + (emp.aadhaar_image || '') + '"' + (emp.aadhaar_image ? '' : ' disabled') + '>Preview</button>' + '</td>');
         tr.append('<td>' + (emp.joining_date || '-') + '</td>');
         tr.append('<td>' + (emp.leaving_date || '-') + '</td>');
         tr.append('<td><span class="badge bg-info">' + clientCount + '</span></td>');
@@ -591,27 +538,10 @@ $('#employeesTable').on('click', '.edit-employee-btn', function() {
   $('#editEmployeeEmail').val(emp.email);
   $('#editEmployeeAddress').val(emp.address);
   $('#editEmployeeAadhaarNumber').val(emp.aadhaar_number);
-  if (emp.aadhaar_image) {
-    $('#editAadhaarImagePreview').attr('src', '/' + emp.aadhaar_image.replace(/^\/*/, '')).show();
-  } else {
-    $('#editAadhaarImagePreview').hide();
-  }
   $('#editEmployeeJoiningDate').val(emp.joining_date);
   $('#editEmployeeLeavingDate').val(emp.leaving_date);
   $('#editEmployeePassword').val('');
   $('#editEmployeeModal').modal('show');
-});
-$('#editEmployeeAadhaarImage').on('change', function(event) {
-  var input = event.target;
-  var preview = document.getElementById('editAadhaarImagePreview');
-  if (input.files && input.files[0]) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-    }
-    reader.readAsDataURL(input.files[0]);
-  }
 });
 $('#editEmployeeForm').on('submit', function(e) {
   e.preventDefault();
@@ -667,44 +597,6 @@ $('#totalClientsCard').off('click').on('click', function() {
   $('#detailsModal').modal('show');
 });
 
-// Add JS for preview and delete
-$('#employeesTable, #adminsTable').on('click', '.preview-aadhaar-btn', function(e) {
-  e.stopPropagation();
-  var imgPath = $(this).data('img');
-  if (imgPath) {
-    $('#aadhaarPreviewImg').attr('src', '/' + imgPath.replace(/^\/+/, ''));
-    $('#aadhaarPreviewModal').modal('show');
-  }
-});
-$('#employeesTable').on('click', '.delete-employee-btn', function(e) {
-  e.stopPropagation();
-  if (confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
-    var id = $(this).data('id');
-    $.post('/admin/employees/delete', {id: id}, function(resp) {
-      if (resp.success) {
-        $('#employeesCard').click();
-      } else {
-        alert('Failed to delete employee.');
-      }
-    });
-  }
-});
-
-// Add JS for activity button
-$('#employeesTable').on('click', '.activity-employee-btn', function(e) {
-  e.stopPropagation();
-  var btn = $(this);
-  var id = btn.data('id');
-  $.post('/admin/employees/toggle_active', {id: id}, function(resp) {
-    if (resp.success) {
-      btn.toggleClass('btn-success btn-secondary');
-      btn.text(resp.is_active ? 'Active' : 'Deactive');
-    } else {
-      alert('Failed to update activity status.');
-    }
-  });
-});
-
 if (window.performance && window.performance.navigation.type === 2) {
   // If navigation type is 'back_forward', reload the page from server
   window.location.reload();
@@ -746,7 +638,6 @@ function loadAdmins() {
         tr.append('<td>' + (admin.email || '-') + '</td>');
         tr.append('<td>' + (admin.address || '-') + '</td>');
         tr.append('<td>' + (admin.aadhaar_number || '-') + '</td>');
-        tr.append('<td>' + '<button class="btn btn-sm btn-info preview-aadhaar-btn" data-img="' + (admin.aadhaar_image || '') + '"' + (admin.aadhaar_image ? '' : ' disabled') + '>Preview</button>' + '</td>');
         tr.append('<td>' + (admin.joining_date || '-') + '</td>');
         tr.append('<td>' + (admin.leaving_date || '-') + '</td>');
         tr.append('<td>' + (admin.is_active ? '<button class="btn btn-sm btn-success activity-admin-btn" data-id="' + admin.id + '">Active</button>' : '<button class="btn btn-sm btn-secondary activity-admin-btn" data-id="' + admin.id + '">Deactive</button>'));
@@ -766,11 +657,6 @@ $('#adminsTable').on('click', '.edit-admin-btn', function() {
   $('#editAdminEmail').val(admin.email);
   $('#editAdminAddress').val(admin.address);
   $('#editAdminAadhaarNumber').val(admin.aadhaar_number);
-  if (admin.aadhaar_image) {
-    $('#editAdminAadhaarImagePreview').attr('src', '/' + admin.aadhaar_image.replace(/^\/*/, '')).show();
-  } else {
-    $('#editAdminAadhaarImagePreview').hide();
-  }
   $('#editAdminJoiningDate').val(admin.joining_date);
   $('#editAdminLeavingDate').val(admin.leaving_date);
   $('#editAdminPassword').val('');
@@ -819,36 +705,6 @@ $('#adminsTable').on('click', '.activity-admin-btn', function(e) {
 
 $('#adminsCard').off('click').on('click', function() {
   loadAdmins();
-});
-
-$('#previewAdminAadhaarBtn').on('click', function() {
-  var fileInput = document.getElementById('editAdminAadhaarImage');
-  var preview = document.getElementById('editAdminAadhaarImagePreview');
-  if (fileInput.files && fileInput.files[0]) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-    }
-    reader.readAsDataURL(fileInput.files[0]);
-  } else if (preview.src && preview.src !== '#') {
-    preview.style.display = 'block';
-  }
-});
-
-$('#previewEmployeeAadhaarBtn').on('click', function() {
-  var fileInput = document.getElementById('editEmployeeAadhaarImage');
-  var preview = document.getElementById('editAadhaarImagePreview');
-  if (fileInput.files && fileInput.files[0]) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-    }
-    reader.readAsDataURL(fileInput.files[0]);
-  } else if (preview.src && preview.src !== '#') {
-    preview.style.display = 'block';
-  }
 });
 </script>
 </body>
