@@ -73,36 +73,55 @@ def register():
         address = request.form.get('address')
         aadhaar_number = request.form.get('aadhaar_number')
         aadhaar_image_file = request.files.get('aadhaar_image')
+        
+        # Validate required fields
+        if not username or not password:
+            flash('Username and password are required.')
+            return render_template('register.html')
+        
         # Check for existing user
         if User.query.filter_by(username=username).first():
             flash('Username already exists.')
+            return render_template('register.html')
+        
+        # Create user with required password
+        user = User(username=username)
+        user.set_password(password)  # Always set password since it's required
+        
+        if role:
+            user.role = role
+        if phone:
+            user.mobile = phone
+        if email:
+            user.email = email
+        if address:
+            user.address = address
+        if aadhaar_number:
+            user.aadhaar_number = aadhaar_number
+        if aadhaar_image_file and aadhaar_image_file.filename:
+            # Save the uploaded file
+            filename = secure_filename(aadhaar_image_file.filename)
+            upload_folder = os.path.join(current_app.root_path, '..', 'instance', 'aadhaar_uploads')
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, filename)
+            aadhaar_image_file.save(file_path)
+            relative_image_path = os.path.relpath(file_path, start=os.path.dirname(os.path.dirname(current_app.root_path)))
+            user.aadhaar_image = relative_image_path
+        
+        # Set status and notification logic
+        if role == 'admin':
+            user.status = 'pending'
+            notif_msg = f"{username} trying to register as an Admin. Authorization is valid?"
+            notif_type = 'admin_pending'
         else:
-            user = User(username=username)
-            if password:
-                user.set_password(password)
-            if role:
-                user.role = role
-            if phone:
-                user.mobile = phone
-            if email:
-                user.email = email
-            if address:
-                user.address = address
-            if aadhaar_number:
-                user.aadhaar_number = aadhaar_number
-            if aadhaar_image_file and aadhaar_image_file.filename:
-                user.aadhaar_image = relative_image_path
-            # Set status and notification logic
-            if role == 'admin':
-                user.status = 'pending'
-                notif_msg = f"{username} trying to register as an Admin. Authorization is valid?"
-                notif_type = 'admin_pending'
-            else:
-                user.status = 'approved'
-                notif_msg = f"{username} has registered as an Employee"
-                notif_type = 'employee_registered'
+            user.status = 'approved'
+            notif_msg = f"{username} has registered as an Employee"
+            notif_type = 'employee_registered'
+        
+        try:
             db.session.add(user)
             db.session.commit()
+            
             # Find superadmin (Admin1)
             superadmin = User.query.filter_by(username='Admin1', role='admin').first()
             if superadmin:
@@ -113,11 +132,18 @@ def register():
                 )
                 db.session.add(notification)
                 db.session.commit()
+            
             log_activity(user, 'register', 'User registered successfully')
+            
             if role == 'admin':
                 flash('Registration request submitted. Awaiting superadmin approval.')
-                return redirect(url_for('auth.login'))
             else:
                 flash('Registration successful')
-                return redirect(url_for('auth.login'))
+            return redirect(url_for('auth.login'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Registration failed: {str(e)}')
+            return render_template('register.html')
+    
     return render_template('register.html') 

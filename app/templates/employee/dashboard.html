@@ -3,77 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <title>Employee Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
-<body>
-<div class="container mt-5">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="mb-0">{{ employee_name }} Dashboard</h2>
-        <a href="/logout" class="btn btn-outline-danger">Log Out</a>
-    </div>
-    <div class="mb-4">
-        <a href="{{ url_for('employee.clients') }}" class="btn btn-primary">My Clients</a>
-        <button type="button" class="btn btn-info" id="openRemindersModal">My Reminders</button>
-        <button type="button" class="btn btn-warning" id="openAnalyticsModal">Analytics</button>
-    </div>
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-bg-light mb-3 dashboard-card" id="totalClientsCard" style="cursor:pointer;">
-                <div class="card-header">Total Clients</div>
-                <div class="card-body"><h4>{{ total_clients }}</h4></div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-bg-light mb-3 dashboard-card" id="visitsScheduledCard" style="cursor:pointer;">
-                <div class="card-header">Visits Scheduled</div>
-                <div class="card-body"><h4>{{ visits_scheduled }}</h4></div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-bg-light mb-3 dashboard-card" id="bookedCard" style="cursor:pointer;">
-                <div class="card-header">Booked</div>
-                <div class="card-body"><h4>{{ booked }}</h4></div>
+<body style="font-family: 'Inter', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%); min-height: 100vh;">
+<!-- Modern Sticky Header -->
+<nav class="navbar navbar-expand-lg navbar-dark shadow-lg sticky-top" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-bold" href="#">
+            <i class="bi bi-person-badge me-2" style="font-size: 1.3rem;"></i>
+            Employee Dashboard
+        </a>
+        <div class="d-flex align-items-center">
+            <div class="dropdown">
+                <button class="btn btn-outline-light dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="bi bi-person-circle me-2"></i>
+                    {{ employee_name }}
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow">
+                    <li><a class="dropdown-item" href="/logout"><i class="bi bi-box-arrow-right me-2"></i>Log Out</a></li>
+                </ul>
             </div>
         </div>
     </div>
-    <h4>Upcoming Reminders</h4>
-    <table class="table table-bordered" id="remindersTable">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Name</th>
-                <th>Remind At</th>
-                <th>Message</th>
-                <th style="width:40px;"></th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for reminder in reminders %}
-            <tr class="reminder-row" data-reminder-id="{{ reminder.id }}">
-                <td>{% set client = reminder.client_id|default(None) and namespace() %}{{ client.name if client else '' }}</td>
-                <td>{{ reminder.remind_at.strftime('%Y-%m-%d %H:%M') }}</td>
-                <td>{{ reminder.message }}</td>
-                <td><button class="btn btn-sm btn-link text-danger delete-reminder-btn" title="Delete">&times;</button></td>
-            </tr>
-        {% else %}
-            <tr><td colspan="4">No upcoming reminders.</td></tr>
-        {% endfor %}
-        </tbody>
-    </table>
+</nav>
+
+<div class="container py-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+        <div class="mb-3 mb-md-0">
+            <h2 class="fw-bold text-dark mb-1">Welcome, {{ employee_name }}!</h2>
+            <p class="text-muted mb-0">Here's your performance overview and reminders.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ url_for('employee.clients') }}" class="btn btn-outline-primary">
+                <i class="bi bi-people me-2" style="font-size: 0.9rem;"></i>My Clients
+            </a>
+            <button type="button" class="btn btn-outline-info" id="openRemindersModal">
+                <i class="bi bi-bell me-2" style="font-size: 0.9rem;"></i>My Reminders
+            </button>
+            <button type="button" class="btn btn-outline-warning" id="openAnalyticsModal">
+                <i class="bi bi-graph-up me-2" style="font-size: 0.9rem;"></i>Analytics
+            </button>
+        </div>
+    </div>
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 dashboard-card" id="totalClientsCard" style="cursor:pointer; border-radius: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); transition: all 0.3s ease;">
+                <div class="card-body p-4 text-white d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-white bg-opacity-20 rounded-circle p-3">
+                            <i class="bi bi-people-fill text-white" style="font-size: 1.2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-title text-white-50 mb-1">Total Clients</h6>
+                        <h3 class="mb-0 fw-bold text-white">{{ total_clients }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 dashboard-card" id="visitsScheduledCard" style="cursor:pointer; border-radius: 20px; background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); transition: all 0.3s ease;">
+                <div class="card-body p-4 text-white d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-white bg-opacity-20 rounded-circle p-3">
+                            <i class="bi bi-calendar-check text-white" style="font-size: 1.2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-title text-white-50 mb-1">Visits Scheduled</h6>
+                        <h3 class="mb-0 fw-bold text-white">{{ visits_scheduled }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-lg h-100 dashboard-card" id="bookedCard" style="cursor:pointer; border-radius: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); transition: all 0.3s ease;">
+                <div class="card-body p-4 text-white d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-white bg-opacity-20 rounded-circle p-3">
+                            <i class="bi bi-check-circle text-white" style="font-size: 1.2rem;"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="card-title text-white-50 mb-1">Booked</h6>
+                        <h3 class="mb-0 fw-bold text-white">{{ booked }}</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Reminders Table -->
+    <div class="card border-0 shadow-lg mb-4" style="border-radius: 20px; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px);">
+        <div class="card-header bg-transparent border-0 p-4">
+            <h4 class="fw-bold mb-0 text-dark"><i class="bi bi-bell me-2 text-info"></i>Upcoming Reminders</h4>
+        </div>
+        <div class="card-body p-4">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="remindersTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Name</th>
+                            <th>Remind At</th>
+                            <th>Message</th>
+                            <th style="width:40px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for reminder in reminders %}
+                        <tr class="reminder-row" data-reminder-id="{{ reminder.id }}">
+                            <td>{% set client = reminder.client_id|default(None) and namespace() %}{{ client.name if client else '' }}</td>
+                            <td>{{ reminder.remind_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ reminder.message }}</td>
+                            <td><button class="btn btn-sm btn-link text-danger delete-reminder-btn" title="Delete">&times;</button></td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4">No upcoming reminders.</td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- Modals for dashboard cards -->
 <div class="modal fade" id="clientsModal" tabindex="-1" aria-labelledby="clientsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="clientsModalLabel">Client Details</h5>
+    <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+      <div class="modal-header border-0 bg-light">
+        <h5 class="modal-title fw-bold" id="clientsModalLabel"><i class="bi bi-people me-2 text-primary"></i>Client Details</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <table class="table table-bordered" id="clientsModalTable">
-          <thead>
+      <div class="modal-body p-4">
+        <table class="table table-hover align-middle" id="clientsModalTable">
+          <thead class="table-light">
             <tr id="clientsModalTableHeader">
               <th>Date</th>
               <th>Name</th>
@@ -94,14 +163,14 @@
 <!-- Reminders Modal -->
 <div class="modal fade" id="remindersModal" tabindex="-1" aria-labelledby="remindersModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="remindersModalLabel">My Reminders</h5>
+    <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+      <div class="modal-header border-0 bg-light">
+        <h5 class="modal-title fw-bold" id="remindersModalLabel"><i class="bi bi-bell me-2 text-info"></i>My Reminders</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
-        <table class="table table-bordered" id="remindersTable">
-            <thead>
+      <div class="modal-body p-4">
+        <table class="table table-hover align-middle" id="remindersTable">
+            <thead class="table-light">
                 <tr>
                     <th>Date</th>
                     <th>Name</th>
@@ -120,17 +189,17 @@
 <!-- Status Confirmation Modal -->
 <div class="modal fade" id="statusConfirmModal" tabindex="-1" aria-labelledby="statusConfirmModalLabel" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="statusConfirmModalLabel">Update Client Status</h5>
+    <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+      <div class="modal-header border-0 bg-light">
+        <h5 class="modal-title fw-bold" id="statusConfirmModalLabel"><i class="bi bi-pencil-square me-2 text-warning"></i>Update Client Status</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
         <p id="statusConfirmText"></p>
         <div class="d-flex justify-content-between">
-          <button class="btn btn-success" id="statusAgreedBtn">Agreed</button>
-          <button class="btn btn-danger" id="statusDisagreedBtn">Disagreed</button>
-          <button class="btn btn-secondary" id="statusCustomBtn">Custom</button>
+          <button class="btn btn-success" id="statusAgreedBtn"><i class="bi bi-check-circle me-2"></i>Agreed</button>
+          <button class="btn btn-danger" id="statusDisagreedBtn"><i class="bi bi-x-circle me-2"></i>Disagreed</button>
+          <button class="btn btn-secondary" id="statusCustomBtn"><i class="bi bi-pencil me-2"></i>Custom</button>
         </div>
       </div>
     </div>
@@ -140,15 +209,15 @@
 <!-- Analytics Modal -->
 <div class="modal fade" id="analyticsModal" tabindex="-1" aria-labelledby="analyticsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="analyticsModalLabel">Employee Performance Analytics</h5>
+    <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+      <div class="modal-header border-0 bg-light">
+        <h5 class="modal-title fw-bold" id="analyticsModalLabel"><i class="bi bi-graph-up me-2 text-warning"></i>Employee Performance Analytics</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
         <div class="mb-3">
-          <label for="chartType" class="form-label">Chart Type:</label>
-          <select id="chartType" class="form-select" style="width:auto;display:inline-block;">
+          <label for="chartType" class="form-label fw-bold">Chart Type:</label>
+          <select id="chartType" class="form-select" style="width:auto;display:inline-block; border-radius: 8px;">
             <option value="bar">Bar</option>
             <option value="pie">Pie</option>
           </select>
@@ -160,6 +229,202 @@
 </div>
 
 <style>
+body {
+    font-family: 'Inter', sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+    min-height: 100vh;
+}
+
+.dashboard-card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    overflow: hidden;
+}
+.dashboard-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 35px rgba(0,0,0,0.25);
+}
+.dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+.dashboard-card:hover::before {
+    transform: translateX(100%);
+}
+.card {
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.table {
+    border-radius: 12px;
+    overflow: hidden;
+}
+.table thead th {
+    border: none;
+    font-weight: 600;
+    color: #495057;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+.table tbody tr {
+    transition: all 0.2s ease;
+}
+.table tbody tr:hover {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 100%);
+    transform: scale(1.01);
+}
+.btn {
+    border-radius: 12px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+}
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+}
+.btn-outline-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+}
+.btn-outline-primary:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+    color: white;
+}
+.btn-outline-info {
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: white;
+    border: none;
+}
+.btn-outline-info:hover {
+    background: linear-gradient(135deg, #3a8fd8 0%, #00c2fe 100%);
+    color: white;
+}
+.btn-outline-warning {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: none;
+}
+.btn-outline-warning:hover {
+    background: linear-gradient(135deg, #e082ea 0%, #e4465b 100%);
+    color: white;
+}
+.form-control, .form-select {
+    border-radius: 12px;
+    border: 2px solid #e9ecef;
+    padding: 12px 16px;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+.form-control:focus, .form-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.3rem rgba(102, 126, 234, 0.25);
+    transform: translateY(-1px);
+}
+.badge {
+    font-weight: 600;
+    padding: 0.6em 1em;
+    border-radius: 20px;
+}
+.modal-content {
+    border: none;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+}
+.dropdown-menu {
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+}
+.navbar {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    backdrop-filter: blur(10px);
+}
+::-webkit-scrollbar {
+    width: 10px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+}
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+.loading {
+    animation: pulse 1.5s infinite;
+}
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+    .dashboard-card {
+        margin-bottom: 1rem;
+    }
+    .btn {
+        font-size: 0.9rem;
+        padding: 0.5rem 1rem;
+    }
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+    .table-responsive {
+        font-size: 0.9rem;
+    }
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+}
+@media (max-width: 576px) {
+    .d-flex.flex-column.flex-md-row {
+        flex-direction: column !important;
+    }
+    .d-flex.flex-wrap.gap-2 {
+        justify-content: center;
+    }
+    .card-body {
+        padding: 1rem;
+    }
+    .h3 {
+        font-size: 1.5rem;
+    }
+}
+.dashboard-card:hover .bi {
+    transform: scale(1.1);
+    transition: transform 0.3s ease;
+}
+.dashboard-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 20px;
+    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.dashboard-card:hover::after {
+    opacity: 1;
+}
 .reminder-row {
   transition: transform 0.15s, box-shadow 0.15s;
 }

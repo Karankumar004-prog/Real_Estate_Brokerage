@@ -94,7 +94,7 @@ def analytics_top_employees():
     values = [e[1] for e in top_employees]
     return jsonify({'labels': labels, 'values': values})
 
-@admin_bp.route('/partners', methods=['GET', 'POST', 'DELETE'])
+@admin_bp.route('/partners', methods=['GET', 'POST', 'DELETE', 'PUT'])
 @login_required
 @admin_required
 def partners():
@@ -123,6 +123,19 @@ def partners():
         db.session.add(partner)
         db.session.commit()
         return jsonify({'success': True})
+    elif request.method == 'PUT':
+        data = request.form
+        partner_id = data.get('id')
+        partner = Partner.query.get(partner_id)
+        if partner:
+            partner.name = data['name']
+            partner.phone = data['phone']
+            partner.email = data['email']
+            partner.type = data['type']
+            partner.data = data['data']
+            db.session.commit()
+            return jsonify({'success': True})
+        return jsonify({'success': False, 'error': 'Partner not found'}), 404
     elif request.method == 'DELETE':
         partner_id = request.form.get('id')
         partner = Partner.query.get(partner_id)
@@ -142,15 +155,34 @@ def export_clients():
     output.seek(0)
     return send_file(io.BytesIO(output.getvalue().encode()), mimetype='text/csv', as_attachment=True, download_name='clients.csv')
 
+@admin_bp.route('/export_partners_csv')
+@login_required
+@admin_required
+def export_partners_csv():
+    partners = Partner.query.all()
+    si = io.StringIO()
+    writer = csv.writer(si)
+    writer.writerow(['ID', 'Name', 'Phone', 'Email', 'Type', 'Data'])
+    for p in partners:
+        writer.writerow([
+            p.id,
+            p.name or '',
+            p.phone or '',
+            p.email or '',
+            p.type or '',
+            p.data or ''
+        ])
+    output = io.BytesIO(si.getvalue().encode())
+    return send_file(output, mimetype='text/csv', as_attachment=True, download_name='partners.csv')
+
 @admin_bp.route('/export/partners')
 @login_required
 @admin_required
 def export_partners():
     output = io.StringIO()
-    output.write('id,type,data\n')
+    output.write('id,name,phone,email,type,data\n')
     for p in Partner.query.all():
-        data = p.encrypted_data.decode() if isinstance(p.encrypted_data, bytes) else p.encrypted_data
-        output.write(f'{p.id},{p.type},{data}\n')
+        output.write(f'{p.id},{p.name or ""},{p.phone or ""},{p.email or ""},{p.type or ""},{p.data or ""}\n')
     output.seek(0)
     return send_file(io.BytesIO(output.getvalue().encode()), mimetype='text/csv', as_attachment=True, download_name='partners.csv')
 
@@ -181,9 +213,11 @@ def employees_list():
             'address': getattr(e, 'address', ''),
             'aadhaar_number': getattr(e, 'aadhaar_number', ''),
             'aadhaar_image': getattr(e, 'aadhaar_image', ''),
+            'is_active': getattr(e, 'is_active', True),
+            'status': getattr(e, 'status', 'approved'),
             'clients': client_list
         })
-    return jsonify(result) 
+    return jsonify(result)
 
 @admin_bp.route('/employees/delete', methods=['POST'])
 @login_required
@@ -209,7 +243,7 @@ def toggle_employee_active():
         user.is_active = not user.is_active
         db.session.commit()
         return jsonify({'success': True, 'is_active': user.is_active})
-    return jsonify({'success': False, 'error': 'Employee not found'}), 404 
+    return jsonify({'success': False, 'error': 'Employee not found'}), 404
 
 @admin_bp.route('/employees/update', methods=['POST'])
 @login_required
@@ -252,7 +286,7 @@ def update_employee():
         file.save(file_path)
         user.aadhaar_image = os.path.relpath(file_path, start=os.path.dirname(os.path.dirname(__file__)))
     db.session.commit()
-    return jsonify({'success': True}) 
+    return jsonify({'success': True})
 
 @admin_bp.route('/export_activity_logs_csv')
 @login_required
@@ -335,7 +369,8 @@ def admins_list():
             'aadhaar_image': getattr(a, 'aadhaar_image', ''),
             'joining_date': str(a.joining_date) if a.joining_date else '',
             'leaving_date': str(a.leaving_date) if a.leaving_date else '',
-            'is_active': a.is_active
+            'is_active': a.is_active,
+            'status': getattr(a, 'status', 'approved')
         })
     return jsonify(result)
 
@@ -364,13 +399,11 @@ def update_admin():
         else:
             user.leaving_date = leaving_date
     password = request.form.get('password')
-    # Only Admin1 can change their own password
-    if user.username == 'Admin1':
-        if current_user.username == 'Admin1' and password:
+    # Only Admin1 can change any admin's password
+    if password:
+        if current_user.username == 'Admin1':
             user.set_password(password)
-    else:
-        if password:
-            user.set_password(password)
+        # Other admins cannot change any admin's password
     # Aadhaar image upload
     if 'aadhaar_image' in request.files and request.files['aadhaar_image'].filename:
         from werkzeug.utils import secure_filename
@@ -449,16 +482,16 @@ def get_notifications():
 def approve_admin():
     if not current_user.username == 'Admin1':
         return jsonify({'error': 'Unauthorized'}), 403
-    notif_id = request.form.get('notif_id')
-    notification = Notification.query.get(notif_id)
-    if not notification or notification.type != 'admin_pending':
-        return jsonify({'error': 'Invalid notification'}), 400
-    user = User.query.get(notification.user_id)
+    user_id = request.form.get('user_id')
+    user = User.query.get(user_id)
     if not user or user.status != 'pending':
         return jsonify({'error': 'Invalid user'}), 400
     user.status = 'approved'
-    notification.message = f"{user.username} Registered as Admin"
-    notification.status = 'read'
+    # Update the notification
+    notification = Notification.query.filter_by(user_id=user_id, type='admin_pending').first()
+    if notification:
+        notification.message = f"{user.username} Registered as Admin"
+        notification.status = 'read'
     db.session.commit()
     return jsonify({'success': True})
 
@@ -467,15 +500,54 @@ def approve_admin():
 def deny_admin():
     if not current_user.username == 'Admin1':
         return jsonify({'error': 'Unauthorized'}), 403
-    notif_id = request.form.get('notif_id')
-    notification = Notification.query.get(notif_id)
-    if not notification or notification.type != 'admin_pending':
-        return jsonify({'error': 'Invalid notification'}), 400
-    user = User.query.get(notification.user_id)
+    user_id = request.form.get('user_id')
+    user = User.query.get(user_id)
     if not user or user.status != 'pending':
         return jsonify({'error': 'Invalid user'}), 400
     user.status = 'terminated'
-    notification.message = f"{user.username} Permission is Terminated"
-    notification.status = 'read'
+    # Update the notification
+    notification = Notification.query.filter_by(user_id=user_id, type='admin_pending').first()
+    if notification:
+        notification.message = f"{user.username} Permission is Terminated"
+        notification.status = 'read'
+    db.session.commit()
+    return jsonify({'success': True})
+
+@admin_bp.route('/notifications/unread_count')
+@admin_required
+def notifications_unread_count():
+    if not current_user.username == 'Admin1':
+        return jsonify({'error': 'Unauthorized'}), 403
+    count = Notification.query.filter_by(status='unread').count()
+    return jsonify({'unread_count': count})
+
+@admin_bp.route('/notifications/mark_read', methods=['POST'])
+@admin_required
+def mark_notification_read():
+    if not current_user.username == 'Admin1':
+        return jsonify({'error': 'Unauthorized'}), 403
+    notif_id = request.form.get('id')
+    notification = Notification.query.get(notif_id)
+    if notification:
+        notification.status = 'read'
+        db.session.commit()
+        return jsonify({'success': True})
+    return jsonify({'success': False, 'error': 'Notification not found'}), 404
+
+@admin_bp.route('/notifications/mark_all_read', methods=['POST'])
+@admin_required
+def mark_all_notifications_read():
+    if not current_user.username == 'Admin1':
+        return jsonify({'error': 'Unauthorized'}), 403
+    Notification.query.filter_by(status='unread').update({'status': 'read'})
+    db.session.commit()
+    return jsonify({'success': True})
+
+@admin_bp.route('/notifications/clear_all', methods=['POST'])
+@admin_required
+def clear_all_notifications():
+    if not current_user.username == 'Admin1':
+        return jsonify({'error': 'Unauthorized'}), 403
+    Notification.query.delete()
     db.session.commit()
     return jsonify({'success': True})
