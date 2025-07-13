@@ -746,8 +746,15 @@ def performance_analytics():
     
     for emp in employees:
         client_count = Client.query.filter_by(assigned_to=emp.id).count()
-        booked_count = Client.query.filter_by(assigned_to=emp.id, status='booked').count()
-        paid_count = Client.query.filter_by(assigned_to=emp.id, status='paid').count()
+        # Handle both lowercase and uppercase status values
+        booked_count = Client.query.filter(
+            Client.assigned_to == emp.id,
+            Client.status.in_(['booked', 'Booked'])
+        ).count()
+        paid_count = Client.query.filter(
+            Client.assigned_to == emp.id,
+            Client.status.in_(['paid', 'Paid'])
+        ).count()
         
         # Calculate conversion rate: (paid clients / total clients) * 100
         conversion_rate = (paid_count / client_count * 100) if client_count > 0 else 0
@@ -782,13 +789,13 @@ def detailed_trends():
         ).count()
         
         booked_clients = Client.query.filter(
-            Client.status == 'booked',
+            Client.status.in_(['booked', 'Booked']),
             Client.created_at >= month_start,
             Client.created_at <= month_end
         ).count()
         
         paid_clients = Client.query.filter(
-            Client.status == 'paid',
+            Client.status.in_(['paid', 'Paid']),
             Client.created_at >= month_start,
             Client.created_at <= month_end
         ).count()
@@ -806,13 +813,41 @@ def detailed_trends():
 @login_required
 @admin_required
 def status_breakdown():
-    # Client status breakdown
-    statuses = ['prospect', 'interested', 'visit_scheduled', 'booked', 'paid', 'completed']
+    # Client status breakdown - handle all possible status values
+    status_mapping = {
+        'Prospect': 'prospect',
+        'prospect': 'prospect',
+        'Interested': 'interested', 
+        'interested': 'interested',
+        'Schedule Visit': 'visit_scheduled',
+        'visit_scheduled': 'visit_scheduled',
+        'Booked': 'booked',
+        'booked': 'booked',
+        'Paid': 'paid',
+        'paid': 'paid',
+        'Completed': 'completed',
+        'completed': 'completed',
+        'Busy': 'busy',
+        'Disagreed': 'disagreed',
+        'Future Plans': 'future_plans'
+    }
+    
     breakdown = {}
     
-    for status in statuses:
-        count = Client.query.filter_by(status=status).count()
-        breakdown[status] = count
+    # Get all unique statuses from database
+    all_statuses = db.session.query(Client.status).distinct().all()
+    
+    for status_tuple in all_statuses:
+        status = status_tuple[0]
+        if status:
+            # Map to standardized status name
+            normalized_status = status_mapping.get(status, status.lower())
+            count = Client.query.filter_by(status=status).count()
+            
+            if normalized_status in breakdown:
+                breakdown[normalized_status] += count
+            else:
+                breakdown[normalized_status] = count
     
     return jsonify(breakdown)
 
@@ -828,11 +863,11 @@ def employee_comparison():
         total_clients = Client.query.filter_by(assigned_to=emp.id).count()
         active_clients = Client.query.filter(
             Client.assigned_to == emp.id,
-            Client.status.in_(['prospect', 'interested', 'visit_scheduled'])
+            Client.status.in_(['prospect', 'Prospect', 'interested', 'Interested', 'visit_scheduled', 'Schedule Visit'])
         ).count()
         successful_clients = Client.query.filter(
             Client.assigned_to == emp.id,
-            Client.status.in_(['booked', 'paid', 'completed'])
+            Client.status.in_(['booked', 'Booked', 'paid', 'Paid', 'completed', 'Completed'])
         ).count()
         
         success_rate = (successful_clients / total_clients * 100) if total_clients > 0 else 0
@@ -868,10 +903,15 @@ def generate_report():
     }
     
     # Client status breakdown
-    statuses = ['prospect', 'interested', 'visit_scheduled', 'booked', 'paid', 'completed']
+    statuses = ['prospect', 'Prospect', 'interested', 'Interested', 'visit_scheduled', 'Schedule Visit', 'booked', 'Booked', 'paid', 'Paid', 'completed', 'Completed']
     for status in statuses:
         count = Client.query.filter_by(status=status).count()
-        report_data['client_status'][status] = count
+        # Normalize status name for reporting
+        normalized_status = status.lower()
+        if normalized_status in report_data['client_status']:
+            report_data['client_status'][normalized_status] += count
+        else:
+            report_data['client_status'][normalized_status] = count
     
     # Employee performance
     employees = User.query.filter_by(role='employee').all()

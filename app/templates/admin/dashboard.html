@@ -172,18 +172,14 @@
                         <p class="text-muted mb-0">Welcome back, {{ current_user.username }}! Here's what's happening today.</p>
                     </div>
                     <div class="d-flex flex-wrap gap-2">
+                        <!-- Remove Partners button as per user request -->
                         <button class="btn btn-outline-primary" id="openAnalyticsModal">
                             <i class="bi bi-graph-up me-2" style="font-size: 0.9rem;"></i>Analytics
-                        </button>
-                        <button class="btn btn-outline-success" id="openPartnersModal">
-                            <i class="bi bi-people me-2" style="font-size: 0.9rem;"></i>Partners
                         </button>
                         <button class="btn btn-outline-warning" id="openActivityLogsModal">
                             <i class="bi bi-clock-history me-2" style="font-size: 0.9rem;"></i>Activity Logs
                         </button>
-                        <button class="btn btn-outline-info" id="openClientManagementModal">
-                            <i class="bi bi-people-fill me-2" style="font-size: 0.9rem;"></i>Client Management
-                        </button>
+                        <!-- Remove Client Management button as per user request -->
                         <button class="btn btn-outline-dark" id="openAdvancedAnalyticsModal">
                             <i class="bi bi-bar-chart me-2" style="font-size: 0.9rem;"></i>Advanced Analytics
                         </button>
@@ -595,112 +591,12 @@
     <div class="modal-content border-0 shadow" style="border-radius: 16px;">
       <div class="modal-header border-0 bg-light">
         <h5 class="modal-title fw-bold" id="clientManagementModalLabel">
-          <i class="bi bi-people-fill me-2 text-primary"></i>Client Management System
+          <i class="bi bi-people-fill me-2 text-primary"></i>Clients
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto;">
-        <!-- Client Management Controls -->
-        <div class="row mb-4">
-          <div class="col-md-3">
-            <button class="btn btn-success w-100" id="addClientBtn">
-              <i class="bi bi-plus-circle me-2"></i>Add New Client
-            </button>
-          </div>
-          <div class="col-md-3">
-            <select class="form-select" id="statusFilter">
-              <option value="">All Status</option>
-              <option value="prospect">Prospect</option>
-              <option value="interested">Interested</option>
-              <option value="visit_scheduled">Visit Scheduled</option>
-              <option value="booked">Booked</option>
-              <option value="paid">Paid</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <select class="form-select" id="employeeFilter">
-              <option value="">All Employees</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <input type="text" class="form-control" id="searchClient" placeholder="Search clients...">
-          </div>
-        </div>
-        
-        <!-- Client Statistics -->
-        <div class="row mb-4">
-          <div class="col-md-2">
-            <div class="card bg-primary text-white text-center p-2">
-              <h6 class="mb-1">Total</h6>
-              <h5 id="totalClientsCount">0</h5>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="card bg-info text-white text-center p-2">
-              <h6 class="mb-1">Prospects</h6>
-              <h5 id="prospectsCount">0</h5>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="card bg-warning text-white text-center p-2">
-              <h6 class="mb-1">Interested</h6>
-              <h5 id="interestedCount">0</h5>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="card bg-secondary text-white text-center p-2">
-              <h6 class="mb-1">Scheduled</h6>
-              <h5 id="scheduledCount">0</h5>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="card bg-success text-white text-center p-2">
-              <h6 class="mb-1">Booked</h6>
-              <h5 id="bookedCount">0</h5>
-            </div>
-          </div>
-          <div class="col-md-2">
-            <div class="card bg-dark text-white text-center p-2">
-              <h6 class="mb-1">Paid</h6>
-              <h5 id="paidCount">0</h5>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Clients Table -->
-        <div class="table-responsive" style="max-height: 40vh;">
-          <table class="table table-hover align-middle table-sm" id="clientsManagementTable">
-            <thead class="table-light sticky-top">
-              <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Phone</th>
-                <th>Budget</th>
-                <th>Area</th>
-                <th>Status</th>
-                <th>Assigned To</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-        </div>
-        
-        <!-- Export Options -->
-        <div class="d-flex justify-content-between align-items-center mt-3">
-          <div>
-            <button class="btn btn-outline-primary btn-sm me-2" id="exportClientsCsv">
-              <i class="bi bi-download me-2"></i>Export CSV
-            </button>
-            <button class="btn btn-outline-success btn-sm" id="exportClientsExcel">
-              <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
-            </button>
-          </div>
-          <div class="text-muted">
-            <small>Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> clients</small>
-          </div>
-        </div>
+        <!-- Controls row removed as per user request -->
       </div>
     </div>
   </div>
@@ -866,7 +762,6 @@
                         <th>Total</th>
                         <th>Booked</th>
                         <th>Paid</th>
-                        <th>Conv. %</th>
                       </tr>
                     </thead>
                     <tbody></tbody>
@@ -885,21 +780,21 @@
           <!-- Trends Tab -->
           <div class="tab-pane fade" id="trends" role="tabpanel">
             <div class="row">
-              <div class="col-md-12">
+              <div class="col-md-6">
                 <h6 class="fw-bold mb-3">12-Month Trend Analysis</h6>
                 <div class="chart-container">
                   <canvas id="trendsChart"></canvas>
                 </div>
               </div>
-            </div>
-            <div class="row mt-4">
               <div class="col-md-6">
                 <h6 class="fw-bold mb-3">Status Breakdown</h6>
                 <div class="chart-container">
                   <canvas id="statusChart"></canvas>
                 </div>
               </div>
-              <div class="col-md-6">
+            </div>
+            <div class="row mt-4">
+              <div class="col-md-12">
                 <h6 class="fw-bold mb-3">Trend Summary</h6>
                 <div id="trendsSummary">
                   <!-- Trends summary will be loaded here -->
@@ -1110,6 +1005,8 @@ $('#partnersTable').on('click', '.edit-partner-btn', function() {
 // On page load
 $(function() {
   loadAdminSummary();
+  // Start periodic dashboard refresh
+  startDashboardRefresh();
 });
 
 // Notification system functionality
@@ -1646,6 +1543,8 @@ $('#clientForm').on('submit', function(e) {
         loadClients();
         loadClientStatistics();
         showToast('Success', resp.message, 'success');
+        // Reload analytics data to reflect changes
+        reloadAllAnalytics();
       } else {
         showToast('Error', resp.error, 'danger');
       }
@@ -1721,6 +1620,8 @@ $(document).on('click', '.delete-client-btn', function() {
         loadClients();
         loadClientStatistics();
         showToast('Success', resp.message, 'success');
+        // Reload analytics data to reflect changes
+        reloadAllAnalytics();
       } else {
         showToast('Error', resp.error, 'danger');
       }
@@ -1759,10 +1660,66 @@ function updateClientCounts() {
 // Advanced Analytics JavaScript
 let analyticsCharts = {};
 
+// Helper function to reload all analytics data when client data changes
+function reloadAllAnalytics() {
+  // Refresh main dashboard cards
+  loadAdminSummary();
+  
+  // Only reload if the advanced analytics modal is open
+  if ($('#advancedAnalyticsModal').hasClass('show')) {
+    loadPerformanceData();
+    // Reload trends data
+    $.getJSON('/admin/analytics/trends/detailed', function(data) {
+      createTrendsChart(data);
+      displayTrendsSummary(data);
+    });
+    
+    $.getJSON('/admin/analytics/status-breakdown', function(data) {
+      createStatusChart(data);
+    });
+    
+    // Reload comparison data
+    $.getJSON('/admin/analytics/employee-comparison', function(data) {
+      createComparisonChart(data);
+      displayComparisonSummary(data);
+    });
+    
+    // Reload reports data
+    $.getJSON('/admin/reports/generate', function(data) {
+      displayReport(data);
+    });
+  }
+}
+
+// Periodic refresh function for analytics data
+function startAnalyticsRefresh() {
+  // Refresh analytics data every 30 seconds when modal is open
+  setInterval(function() {
+    if ($('#advancedAnalyticsModal').hasClass('show')) {
+      reloadAllAnalytics();
+    }
+  }, 30000); // 30 seconds
+}
+
+// Function to check for client data changes and refresh dashboard
+function startDashboardRefresh() {
+  // Refresh main dashboard data every 60 seconds
+  setInterval(function() {
+    loadAdminSummary();
+    // If client management modal is open, refresh client data
+    if ($('#clientManagementModal').hasClass('show')) {
+      loadClients();
+      loadClientStatistics();
+    }
+  }, 60000); // 60 seconds
+}
+
 // Load advanced analytics modal
 $('#openAdvancedAnalyticsModal').on('click', function() {
   $('#advancedAnalyticsModal').modal('show');
   loadPerformanceData();
+  // Start periodic refresh when modal opens
+  startAnalyticsRefresh();
 });
 
 // Load performance data
@@ -1784,7 +1741,6 @@ function displayPerformanceTable(data) {
     tr.append('<td>' + emp.total_clients + '</td>');
     tr.append('<td>' + emp.booked + '</td>');
     tr.append('<td>' + emp.paid + '</td>');
-    tr.append('<td><span class="badge bg-' + (emp.conversion_rate > 50 ? 'success' : emp.conversion_rate > 25 ? 'warning' : 'danger') + '">' + emp.conversion_rate + '%</span></td>');
     tbody.append(tr);
   });
 }
@@ -2109,39 +2065,6 @@ function displayReport(data) {
                 `<tr><td><strong>${status.charAt(0).toUpperCase() + status.slice(1)}:</strong></td><td>${count}</td></tr>`
               ).join('')}
             </table>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-12">
-        <div class="card">
-          <div class="card-header bg-info text-white">
-            <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Activity</h6>
-          </div>
-          <div class="card-body">
-            <div class="table-responsive">
-              <table class="table table-sm">
-                <thead>
-                  <tr>
-                    <th>Time</th>
-                    <th>User</th>
-                    <th>Action</th>
-                    <th>Details</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${data.recent_activity.map(activity => 
-                    `<tr>
-                      <td>${activity.timestamp}</td>
-                      <td>${activity.user || 'System'}</td>
-                      <td>${activity.action}</td>
-                      <td>${activity.details || '-'}</td>
-                    </tr>`
-                  ).join('')}
-                </tbody>
-              </table>
-            </div>
           </div>
         </div>
       </div>
