@@ -1368,7 +1368,11 @@ $('#adminsTable').on('click', '.delete-admin-btn', function(e) {
       if (resp.success) {
         loadAdmins();
       } else {
-        alert('Failed to delete admin.');
+        if (resp.error === 'Admin1 is super Admin') {
+          showToast('Error', 'Admin1 is super Admin', 'danger');
+        } else {
+          alert('Failed to delete admin.');
+        }
       }
     });
   }
@@ -1383,7 +1387,11 @@ $('#adminsTable').on('click', '.activity-admin-btn', function(e) {
       btn.toggleClass('btn-success btn-secondary');
       btn.text(resp.is_active ? 'Active' : 'Deactive');
     } else {
-      alert('Failed to update activity status.');
+      if (resp.error === 'Admin1 is super Admin') {
+        showToast('Error', 'Admin1 is super Admin', 'danger');
+      } else {
+        alert('Failed to update activity status.');
+      }
     }
   });
 });

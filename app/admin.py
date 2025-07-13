@@ -426,6 +426,8 @@ def delete_admin():
     admin_id = request.form.get('id')
     user = User.query.get(admin_id)
     if user and user.role == 'admin':
+        if user.username == 'Admin1':
+            return jsonify({'success': False, 'error': 'Admin1 is super Admin'}), 403
         db.session.delete(user)
         db.session.commit()
         return jsonify({'success': True})
@@ -438,6 +440,8 @@ def toggle_admin_active():
     admin_id = request.form.get('id')
     user = User.query.get(admin_id)
     if user and user.role == 'admin':
+        if user.username == 'Admin1':
+            return jsonify({'success': False, 'error': 'Admin1 is super Admin'}), 403
         user.is_active = not user.is_active
         db.session.commit()
         return jsonify({'success': True, 'is_active': user.is_active})
