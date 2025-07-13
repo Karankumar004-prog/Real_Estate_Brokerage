@@ -15,9 +15,31 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(120))
     joining_date = db.Column(db.Date)
     leaving_date = db.Column(db.Date)
-    is_active = db.Column(db.Boolean, default=True)
-    status = db.Column(db.String(20), default='approved')  # 'pending', 'approved', 'terminated'
+    _is_active = db.Column('is_active', db.Boolean, default=True)
+    _status = db.Column('status', db.String(20), default='approved')  # 'pending', 'approved', 'terminated'
     clients = db.relationship('Client', backref='employee', lazy=True)
+
+    @property
+    def status(self):
+        return self._status
+
+    @status.setter
+    def status(self, value):
+        # Prevent Admin1 from having any status other than 'approved'
+        if self.username == 'Admin1' and value != 'approved':
+            raise ValueError("Admin1's status cannot be changed from 'approved'")
+        self._status = value
+
+    @property
+    def is_active(self):
+        return self._is_active
+
+    @is_active.setter
+    def is_active(self, value):
+        # Prevent Admin1 from being deactivated
+        if self.username == 'Admin1' and not value:
+            raise ValueError("Admin1 cannot be deactivated")
+        self._is_active = value
 
     def set_password(self, password):
         self.password_hash = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
@@ -67,6 +89,34 @@ class Notification(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))  # Who triggered the notification
     status = db.Column(db.String(20), default='unread')  # 'unread', 'read'
     timestamp = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+
+class Property(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    type = db.Column(db.String(50))  # 'apartment', 'house', 'commercial', 'land'
+    area = db.Column(db.String(100))
+    price = db.Column(db.String(50))
+    location = db.Column(db.String(200))
+    description = db.Column(db.Text)
+    status = db.Column(db.String(20), default='available')  # 'available', 'sold', 'reserved'
+    bedrooms = db.Column(db.Integer)
+    bathrooms = db.Column(db.Integer)
+    square_feet = db.Column(db.String(50))
+    amenities = db.Column(db.Text)  # JSON string of amenities
+    images = db.Column(db.Text)  # JSON string of image paths
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+class ClientInteraction(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    client_id = db.Column(db.Integer, db.ForeignKey('client.id'), nullable=False)
+    employee_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    interaction_type = db.Column(db.String(50))  # 'call', 'visit', 'meeting', 'follow_up'
+    notes = db.Column(db.Text)
+    scheduled_date = db.Column(db.DateTime)
+    completed_date = db.Column(db.DateTime)
+    status = db.Column(db.String(20), default='scheduled')  # 'scheduled', 'completed', 'cancelled'
+    created_at = db.Column(db.DateTime, server_default=db.func.now(), nullable=False)
 
 def log_activity(user, action, details=None):
     from . import db  # local import to avoid circular import

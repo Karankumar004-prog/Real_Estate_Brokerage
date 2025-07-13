@@ -33,7 +33,7 @@ def analytics_summary():
     # Most requested budget range
     budgets = db.session.query(Client.budget, func.count(Client.id)).filter(Client.assigned_to.isnot(None)).group_by(Client.budget).order_by(desc(func.count(Client.id))).all()
     most_requested_budget = str(budgets[0][0]) if budgets else '-'
-    # Conversion ratio: paid/total
+    # Conversion ratio: paid/total clients * 100
     paid_count = Client.query.filter(Client.status.ilike('%paid%'), Client.assigned_to.isnot(None)).count()
     conversion_ratio = f"{int((paid_count/total_clients)*100) if total_clients else 0}%"
     # Revenue: count of 'paid' clients * 1 (stub, replace with real revenue logic)
@@ -551,3 +551,345 @@ def clear_all_notifications():
     Notification.query.delete()
     db.session.commit()
     return jsonify({'success': True})
+
+# Client Management System Routes
+@admin_bp.route('/clients/list')
+@login_required
+@admin_required
+def clients_list():
+    clients = Client.query.all()
+    result = []
+    for c in clients:
+        employee = User.query.get(c.assigned_to) if c.assigned_to else None
+        result.append({
+            'id': c.id,
+            'name': c.name,
+            'phone': c.phone,
+            'budget': c.budget,
+            'area': c.area,
+            'preferred_building': c.preferred_building,
+            'status': c.status,
+            'assigned_to': employee.username if employee else 'Unassigned',
+            'assigned_to_id': c.assigned_to,
+            'created_at': c.created_at.strftime('%Y-%m-%d %H:%M') if c.created_at else '',
+            'notes': getattr(c, 'notes', '')
+        })
+    return jsonify(result)
+
+@admin_bp.route('/clients/statistics')
+@login_required
+@admin_required
+def clients_statistics():
+    total = Client.query.count()
+    prospects = Client.query.filter_by(status='prospect').count()
+    interested = Client.query.filter_by(status='interested').count()
+    scheduled = Client.query.filter_by(status='visit_scheduled').count()
+    booked = Client.query.filter_by(status='booked').count()
+    paid = Client.query.filter_by(status='paid').count()
+    
+    return jsonify({
+        'total': total,
+        'prospects': prospects,
+        'interested': interested,
+        'scheduled': scheduled,
+        'booked': booked,
+        'paid': paid
+    })
+
+@admin_bp.route('/clients/add', methods=['POST'])
+@login_required
+@admin_required
+def add_client():
+    try:
+        data = request.form
+        client = Client(
+            name=data['name'],
+            phone=data['phone'],
+            budget=data.get('budget', ''),
+            area=data.get('area', ''),
+            preferred_building=data.get('preferred_building', ''),
+            status=data.get('status', 'prospect'),
+            assigned_to=int(data['assigned_to']) if data.get('assigned_to') else None
+        )
+        db.session.add(client)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Client added successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@admin_bp.route('/clients/update/<int:client_id>', methods=['POST'])
+@login_required
+@admin_required
+def update_client(client_id):
+    try:
+        client = Client.query.get(client_id)
+        if not client:
+            return jsonify({'success': False, 'error': 'Client not found'}), 404
+        
+        data = request.form
+        client.name = data['name']
+        client.phone = data['phone']
+        client.budget = data.get('budget', '')
+        client.area = data.get('area', '')
+        client.preferred_building = data.get('preferred_building', '')
+        client.status = data.get('status', 'prospect')
+        client.assigned_to = int(data['assigned_to']) if data.get('assigned_to') else None
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Client updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@admin_bp.route('/clients/delete/<int:client_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_client(client_id):
+    try:
+        client = Client.query.get(client_id)
+        if not client:
+            return jsonify({'success': False, 'error': 'Client not found'}), 404
+        
+        client_name = client.name
+        db.session.delete(client)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Client deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'error': str(e)}), 400
+
+@admin_bp.route('/clients/details/<int:client_id>')
+@login_required
+@admin_required
+def client_details(client_id):
+    client = Client.query.get(client_id)
+    if not client:
+        return jsonify({'success': False, 'error': 'Client not found'}), 404
+    
+    employee = User.query.get(client.assigned_to) if client.assigned_to else None
+    
+    return jsonify({
+        'id': client.id,
+        'name': client.name,
+        'phone': client.phone,
+        'budget': client.budget,
+        'area': client.area,
+        'preferred_building': client.preferred_building,
+        'status': client.status,
+        'assigned_to': employee.username if employee else 'Unassigned',
+        'assigned_to_id': client.assigned_to,
+        'created_at': client.created_at.strftime('%Y-%m-%d %H:%M') if client.created_at else '',
+        'notes': getattr(client, 'notes', '')
+    })
+
+@admin_bp.route('/clients/export/csv')
+@login_required
+@admin_required
+def export_clients_csv():
+    clients = Client.query.all()
+    si = io.StringIO()
+    writer = csv.writer(si)
+    writer.writerow(['ID', 'Name', 'Phone', 'Budget', 'Area', 'Preferred Building', 'Status', 'Assigned To', 'Created At'])
+    
+    for c in clients:
+        employee = User.query.get(c.assigned_to) if c.assigned_to else None
+        writer.writerow([
+            c.id,
+            c.name,
+            c.phone,
+            c.budget or '',
+            c.area or '',
+            c.preferred_building or '',
+            c.status or '',
+            employee.username if employee else 'Unassigned',
+            c.created_at.strftime('%Y-%m-%d %H:%M') if c.created_at else ''
+        ])
+    
+    output = io.BytesIO(si.getvalue().encode())
+    return send_file(output, mimetype='text/csv', as_attachment=True, download_name='clients.csv')
+
+@admin_bp.route('/clients/export/excel')
+@login_required
+@admin_required
+def export_clients_excel():
+    # This would require openpyxl library for Excel export
+    # For now, return CSV with Excel mimetype
+    return export_clients_csv()
+
+@admin_bp.route('/employees/list/for-assignment')
+@login_required
+@admin_required
+def employees_for_assignment():
+    employees = User.query.filter_by(role='employee', is_active=True).all()
+    result = []
+    for e in employees:
+        result.append({
+            'id': e.id,
+            'username': e.username,
+            'mobile': e.mobile or '',
+            'email': e.email or ''
+        })
+    return jsonify(result)
+
+# Advanced Analytics Routes
+@admin_bp.route('/analytics/performance')
+@login_required
+@admin_required
+def performance_analytics():
+    # Employee performance metrics
+    employees = User.query.filter_by(role='employee').all()
+    performance_data = []
+    
+    for emp in employees:
+        client_count = Client.query.filter_by(assigned_to=emp.id).count()
+        booked_count = Client.query.filter_by(assigned_to=emp.id, status='booked').count()
+        paid_count = Client.query.filter_by(assigned_to=emp.id, status='paid').count()
+        
+        # Calculate conversion rate: (paid clients / total clients) * 100
+        conversion_rate = (paid_count / client_count * 100) if client_count > 0 else 0
+        
+        performance_data.append({
+            'employee': emp.username,
+            'total_clients': client_count,
+            'booked': booked_count,
+            'paid': paid_count,
+            'conversion_rate': round(conversion_rate, 1)
+        })
+    
+    return jsonify(performance_data)
+
+@admin_bp.route('/analytics/trends/detailed')
+@login_required
+@admin_required
+def detailed_trends():
+    # Detailed trend analysis
+    from datetime import datetime, timedelta
+    
+    # Last 12 months data
+    trends = []
+    for i in range(12):
+        date = datetime.now() - timedelta(days=30*i)
+        month_start = date.replace(day=1)
+        month_end = (month_start + timedelta(days=32)).replace(day=1) - timedelta(days=1)
+        
+        new_clients = Client.query.filter(
+            Client.created_at >= month_start,
+            Client.created_at <= month_end
+        ).count()
+        
+        booked_clients = Client.query.filter(
+            Client.status == 'booked',
+            Client.created_at >= month_start,
+            Client.created_at <= month_end
+        ).count()
+        
+        paid_clients = Client.query.filter(
+            Client.status == 'paid',
+            Client.created_at >= month_start,
+            Client.created_at <= month_end
+        ).count()
+        
+        trends.append({
+            'month': month_start.strftime('%B %Y'),
+            'new_clients': new_clients,
+            'booked': booked_clients,
+            'paid': paid_clients
+        })
+    
+    return jsonify(trends)
+
+@admin_bp.route('/analytics/status-breakdown')
+@login_required
+@admin_required
+def status_breakdown():
+    # Client status breakdown
+    statuses = ['prospect', 'interested', 'visit_scheduled', 'booked', 'paid', 'completed']
+    breakdown = {}
+    
+    for status in statuses:
+        count = Client.query.filter_by(status=status).count()
+        breakdown[status] = count
+    
+    return jsonify(breakdown)
+
+@admin_bp.route('/analytics/employee-comparison')
+@login_required
+@admin_required
+def employee_comparison():
+    # Compare employee performance
+    employees = User.query.filter_by(role='employee').all()
+    comparison = []
+    
+    for emp in employees:
+        total_clients = Client.query.filter_by(assigned_to=emp.id).count()
+        active_clients = Client.query.filter(
+            Client.assigned_to == emp.id,
+            Client.status.in_(['prospect', 'interested', 'visit_scheduled'])
+        ).count()
+        successful_clients = Client.query.filter(
+            Client.assigned_to == emp.id,
+            Client.status.in_(['booked', 'paid', 'completed'])
+        ).count()
+        
+        success_rate = (successful_clients / total_clients * 100) if total_clients > 0 else 0
+        
+        comparison.append({
+            'employee': emp.username,
+            'total_clients': total_clients,
+            'active_clients': active_clients,
+            'successful_clients': successful_clients,
+            'success_rate': round(success_rate, 2)
+        })
+    
+    return jsonify(comparison)
+
+@admin_bp.route('/reports/generate')
+@login_required
+@admin_required
+def generate_report():
+    # Generate comprehensive report
+    from datetime import datetime
+    
+    report_data = {
+        'generated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'summary': {
+            'total_clients': Client.query.count(),
+            'total_employees': User.query.filter_by(role='employee').count(),
+            'total_admins': User.query.filter_by(role='admin').count(),
+            'total_partners': Partner.query.count()
+        },
+        'client_status': {},
+        'employee_performance': [],
+        'recent_activity': []
+    }
+    
+    # Client status breakdown
+    statuses = ['prospect', 'interested', 'visit_scheduled', 'booked', 'paid', 'completed']
+    for status in statuses:
+        count = Client.query.filter_by(status=status).count()
+        report_data['client_status'][status] = count
+    
+    # Employee performance
+    employees = User.query.filter_by(role='employee').all()
+    for emp in employees:
+        client_count = Client.query.filter_by(assigned_to=emp.id).count()
+        report_data['employee_performance'].append({
+            'name': emp.username,
+            'clients': client_count
+        })
+    
+    # Recent activity (last 10 logs)
+    recent_logs = ActivityLog.query.order_by(ActivityLog.timestamp.desc()).limit(10).all()
+    for log in recent_logs:
+        report_data['recent_activity'].append({
+            'timestamp': log.timestamp.strftime('%Y-%m-%d %H:%M'),
+            'user': log.username,
+            'action': log.action,
+            'details': log.details
+        })
+    
+    return jsonify(report_data)

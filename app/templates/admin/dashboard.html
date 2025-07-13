@@ -97,6 +97,18 @@
         .btn, .card, .dropdown-menu {
             transition: all 0.2s ease;
         }
+        
+        /* Chart container dimensions */
+        #performanceChart, #trendsChart, #statusChart, #comparisonChart {
+            width: 360px !important;
+            height: 235px !important;
+        }
+        
+        .chart-container {
+            width: 360px;
+            height: 235px;
+            position: relative;
+        }
     </style>
 </head>
 <body class="bg-gradient">
@@ -168,6 +180,12 @@
                         </button>
                         <button class="btn btn-outline-warning" id="openActivityLogsModal">
                             <i class="bi bi-clock-history me-2" style="font-size: 0.9rem;"></i>Activity Logs
+                        </button>
+                        <button class="btn btn-outline-info" id="openClientManagementModal">
+                            <i class="bi bi-people-fill me-2" style="font-size: 0.9rem;"></i>Client Management
+                        </button>
+                        <button class="btn btn-outline-dark" id="openAdvancedAnalyticsModal">
+                            <i class="bi bi-bar-chart me-2" style="font-size: 0.9rem;"></i>Advanced Analytics
                         </button>
                     </div>
                 </div>
@@ -565,6 +583,365 @@
         </table>
         <div class="text-end">
           <a href="{{ url_for('admin.export_activity_logs_csv') }}" class="btn btn-success" id="exportActivityLogsCsvBtn">Export Logs CSV</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Management System Modal -->
+<div class="modal fade" id="clientManagementModal" tabindex="-1" aria-labelledby="clientManagementModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+      <div class="modal-header border-0 bg-light">
+        <h5 class="modal-title fw-bold" id="clientManagementModalLabel">
+          <i class="bi bi-people-fill me-2 text-primary"></i>Client Management System
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4" style="max-height: 70vh; overflow-y: auto;">
+        <!-- Client Management Controls -->
+        <div class="row mb-4">
+          <div class="col-md-3">
+            <button class="btn btn-success w-100" id="addClientBtn">
+              <i class="bi bi-plus-circle me-2"></i>Add New Client
+            </button>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select" id="statusFilter">
+              <option value="">All Status</option>
+              <option value="prospect">Prospect</option>
+              <option value="interested">Interested</option>
+              <option value="visit_scheduled">Visit Scheduled</option>
+              <option value="booked">Booked</option>
+              <option value="paid">Paid</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select class="form-select" id="employeeFilter">
+              <option value="">All Employees</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input type="text" class="form-control" id="searchClient" placeholder="Search clients...">
+          </div>
+        </div>
+        
+        <!-- Client Statistics -->
+        <div class="row mb-4">
+          <div class="col-md-2">
+            <div class="card bg-primary text-white text-center p-2">
+              <h6 class="mb-1">Total</h6>
+              <h5 id="totalClientsCount">0</h5>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="card bg-info text-white text-center p-2">
+              <h6 class="mb-1">Prospects</h6>
+              <h5 id="prospectsCount">0</h5>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="card bg-warning text-white text-center p-2">
+              <h6 class="mb-1">Interested</h6>
+              <h5 id="interestedCount">0</h5>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="card bg-secondary text-white text-center p-2">
+              <h6 class="mb-1">Scheduled</h6>
+              <h5 id="scheduledCount">0</h5>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="card bg-success text-white text-center p-2">
+              <h6 class="mb-1">Booked</h6>
+              <h5 id="bookedCount">0</h5>
+            </div>
+          </div>
+          <div class="col-md-2">
+            <div class="card bg-dark text-white text-center p-2">
+              <h6 class="mb-1">Paid</h6>
+              <h5 id="paidCount">0</h5>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Clients Table -->
+        <div class="table-responsive" style="max-height: 40vh;">
+          <table class="table table-hover align-middle table-sm" id="clientsManagementTable">
+            <thead class="table-light sticky-top">
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Phone</th>
+                <th>Budget</th>
+                <th>Area</th>
+                <th>Status</th>
+                <th>Assigned To</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        
+        <!-- Export Options -->
+        <div class="d-flex justify-content-between align-items-center mt-3">
+          <div>
+            <button class="btn btn-outline-primary btn-sm me-2" id="exportClientsCsv">
+              <i class="bi bi-download me-2"></i>Export CSV
+            </button>
+            <button class="btn btn-outline-success btn-sm" id="exportClientsExcel">
+              <i class="bi bi-file-earmark-excel me-2"></i>Export Excel
+            </button>
+          </div>
+          <div class="text-muted">
+            <small>Showing <span id="showingCount">0</span> of <span id="totalCount">0</span> clients</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit Client Modal -->
+<div class="modal fade" id="addEditClientModal" tabindex="-1" aria-labelledby="addEditClientModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+      <div class="modal-header border-0 bg-light">
+        <h5 class="modal-title fw-bold" id="addEditClientModalLabel">
+          <i class="bi bi-person-plus me-2 text-success"></i>Add New Client
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <form id="clientForm">
+          <input type="hidden" id="clientId" name="id">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="clientName" class="form-label fw-bold">Client Name *</label>
+                <input type="text" class="form-control" id="clientName" name="name" required>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="clientPhone" class="form-label fw-bold">Phone Number *</label>
+                <input type="tel" class="form-control" id="clientPhone" name="phone" required>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="clientBudget" class="form-label fw-bold">Budget Range</label>
+                <select class="form-select" id="clientBudget" name="budget">
+                  <option value="">Select Budget</option>
+                  <option value="Under 50L">Under 50L</option>
+                  <option value="50L - 1Cr">50L - 1Cr</option>
+                  <option value="1Cr - 2Cr">1Cr - 2Cr</option>
+                  <option value="2Cr - 5Cr">2Cr - 5Cr</option>
+                  <option value="Above 5Cr">Above 5Cr</option>
+                </select>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="clientArea" class="form-label fw-bold">Preferred Area</label>
+                <input type="text" class="form-control" id="clientArea" name="area" placeholder="e.g., Bandra, Andheri">
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="clientBuilding" class="form-label fw-bold">Preferred Building</label>
+                <input type="text" class="form-control" id="clientBuilding" name="preferred_building" placeholder="e.g., Building Name">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="clientStatus" class="form-label fw-bold">Status</label>
+                <select class="form-select" id="clientStatus" name="status">
+                  <option value="prospect">Prospect</option>
+                  <option value="interested">Interested</option>
+                  <option value="visit_scheduled">Visit Scheduled</option>
+                  <option value="booked">Booked</option>
+                  <option value="paid">Paid</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="clientEmployee" class="form-label fw-bold">Assign to Employee</label>
+            <select class="form-select" id="clientEmployee" name="assigned_to">
+              <option value="">Select Employee</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="clientNotes" class="form-label fw-bold">Notes</label>
+            <textarea class="form-control" id="clientNotes" name="notes" rows="3" placeholder="Additional notes about the client..."></textarea>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary">
+              <i class="bi bi-check-circle me-2"></i>Save Client
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Details Modal -->
+<div class="modal fade" id="clientDetailsModal" tabindex="-1" aria-labelledby="clientDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+      <div class="modal-header border-0 bg-light">
+        <h5 class="modal-title fw-bold" id="clientDetailsModalLabel">
+          <i class="bi bi-person-circle me-2 text-info"></i>Client Details
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <div id="clientDetailsContent">
+          <!-- Client details will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Advanced Analytics Modal -->
+<div class="modal fade" id="advancedAnalyticsModal" tabindex="-1" aria-labelledby="advancedAnalyticsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content border-0 shadow" style="border-radius: 16px;">
+      <div class="modal-header border-0 bg-light">
+        <h5 class="modal-title fw-bold" id="advancedAnalyticsModalLabel">
+          <i class="bi bi-bar-chart me-2 text-dark"></i>Advanced Analytics & Reports
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4" style="max-height: 75vh; overflow-y: auto;">
+        <!-- Analytics Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4" id="analyticsTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance" type="button" role="tab">
+              <i class="bi bi-speedometer2 me-2"></i>Performance
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="trends-tab" data-bs-toggle="tab" data-bs-target="#trends" type="button" role="tab">
+              <i class="bi bi-graph-up me-2"></i>Trends
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="comparison-tab" data-bs-toggle="tab" data-bs-target="#comparison" type="button" role="tab">
+              <i class="bi bi-people me-2"></i>Employee Comparison
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="reports-tab" data-bs-toggle="tab" data-bs-target="#reports" type="button" role="tab">
+              <i class="bi bi-file-earmark-text me-2"></i>Reports
+            </button>
+          </li>
+        </ul>
+        
+        <!-- Tab Content -->
+        <div class="tab-content" id="analyticsTabContent">
+          <!-- Performance Tab -->
+          <div class="tab-pane fade show active" id="performance" role="tabpanel">
+            <div class="row">
+              <div class="col-md-6">
+                <h6 class="fw-bold mb-3">Employee Performance Metrics</h6>
+                <div class="table-responsive" style="max-height: 30vh;">
+                  <table class="table table-hover table-sm" id="performanceTable">
+                    <thead class="table-light sticky-top">
+                      <tr>
+                        <th>Employee</th>
+                        <th>Total</th>
+                        <th>Booked</th>
+                        <th>Paid</th>
+                        <th>Conv. %</th>
+                      </tr>
+                    </thead>
+                    <tbody></tbody>
+                  </table>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="fw-bold mb-3">Performance Chart</h6>
+                <div class="chart-container">
+                  <canvas id="performanceChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Trends Tab -->
+          <div class="tab-pane fade" id="trends" role="tabpanel">
+            <div class="row">
+              <div class="col-md-12">
+                <h6 class="fw-bold mb-3">12-Month Trend Analysis</h6>
+                <div class="chart-container">
+                  <canvas id="trendsChart"></canvas>
+                </div>
+              </div>
+            </div>
+            <div class="row mt-4">
+              <div class="col-md-6">
+                <h6 class="fw-bold mb-3">Status Breakdown</h6>
+                <div class="chart-container">
+                  <canvas id="statusChart"></canvas>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <h6 class="fw-bold mb-3">Trend Summary</h6>
+                <div id="trendsSummary">
+                  <!-- Trends summary will be loaded here -->
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Employee Comparison Tab -->
+          <div class="tab-pane fade" id="comparison" role="tabpanel">
+            <div class="row">
+              <div class="col-md-8">
+                <h6 class="fw-bold mb-3">Employee Performance Comparison</h6>
+                <div class="chart-container">
+                  <canvas id="comparisonChart"></canvas>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <h6 class="fw-bold mb-3">Comparison Summary</h6>
+                <div id="comparisonSummary">
+                  <!-- Comparison summary will be loaded here -->
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Reports Tab -->
+          <div class="tab-pane fade" id="reports" role="tabpanel">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                  <h6 class="fw-bold mb-0">Comprehensive Business Report</h6>
+                  <button class="btn btn-primary btn-sm" id="generateReportBtn">
+                    <i class="bi bi-download me-2"></i>Generate Report
+                  </button>
+                </div>
+                <div id="reportContent" style="max-height: 40vh; overflow-y: auto;">
+                  <!-- Report content will be loaded here -->
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -1117,7 +1494,665 @@ $('#adminsTable').on('click', '.activity-admin-btn', function(e) {
 $('#adminsCard').off('click').on('click', function() {
   loadAdmins();
 });
+
+// Client Management System JavaScript
+let allClients = [];
+let filteredClients = [];
+
+// Load client management modal
+$('#openClientManagementModal').on('click', function() {
+  loadClients();
+  loadClientStatistics();
+  loadEmployeesForAssignment();
+  $('#clientManagementModal').modal('show');
+});
+
+// Load all clients
+function loadClients() {
+  $.getJSON('/admin/clients/list', function(data) {
+    allClients = data;
+    filteredClients = data;
+    displayClients();
+    updateClientCounts();
+  });
+}
+
+// Display clients in table
+function displayClients() {
+  var tbody = $('#clientsManagementTable tbody');
+  tbody.empty();
+  
+  if (filteredClients.length === 0) {
+    tbody.append('<tr><td colspan="8" class="text-center text-muted">No clients found</td></tr>');
+    return;
+  }
+  
+  filteredClients.forEach(function(client) {
+    var statusBadge = getStatusBadge(client.status);
+    var tr = $('<tr></tr>');
+    tr.append('<td>' + client.id + '</td>');
+    tr.append('<td><strong>' + client.name + '</strong></td>');
+    tr.append('<td>' + client.phone + '</td>');
+    tr.append('<td>' + (client.budget || '-') + '</td>');
+    tr.append('<td>' + (client.area || '-') + '</td>');
+    tr.append('<td>' + statusBadge + '</td>');
+    tr.append('<td>' + client.assigned_to + '</td>');
+    tr.append('<td>' +
+      '<button class="btn btn-sm btn-info view-client-btn me-1" data-id="' + client.id + '" title="View Details"><i class="bi bi-eye"></i></button>' +
+      '<button class="btn btn-sm btn-warning edit-client-btn me-1" data-id="' + client.id + '" title="Edit"><i class="bi bi-pencil"></i></button>' +
+      '<button class="btn btn-sm btn-danger delete-client-btn" data-id="' + client.id + '" title="Delete"><i class="bi bi-trash"></i></button>' +
+      '</td>');
+    tbody.append(tr);
+  });
+  
+  $('#showingCount').text(filteredClients.length);
+  $('#totalCount').text(allClients.length);
+}
+
+// Get status badge HTML
+function getStatusBadge(status) {
+  var badges = {
+    'prospect': '<span class="badge bg-info">Prospect</span>',
+    'interested': '<span class="badge bg-warning">Interested</span>',
+    'visit_scheduled': '<span class="badge bg-secondary">Scheduled</span>',
+    'booked': '<span class="badge bg-success">Booked</span>',
+    'paid': '<span class="badge bg-dark">Paid</span>',
+    'completed': '<span class="badge bg-primary">Completed</span>'
+  };
+  return badges[status] || '<span class="badge bg-light text-dark">' + status + '</span>';
+}
+
+// Load client statistics
+function loadClientStatistics() {
+  $.getJSON('/admin/clients/statistics', function(data) {
+    $('#totalClientsCount').text(data.total);
+    $('#prospectsCount').text(data.prospects);
+    $('#interestedCount').text(data.interested);
+    $('#scheduledCount').text(data.scheduled);
+    $('#bookedCount').text(data.booked);
+    $('#paidCount').text(data.paid);
+  });
+}
+
+// Load employees for assignment dropdown
+function loadEmployeesForAssignment() {
+  $.getJSON('/admin/employees/list/for-assignment', function(data) {
+    var select = $('#clientEmployee');
+    select.empty();
+    select.append('<option value="">Select Employee</option>');
+    data.forEach(function(emp) {
+      select.append('<option value="' + emp.id + '">' + emp.username + '</option>');
+    });
+  });
+}
+
+// Filter clients
+$('#statusFilter').on('change', function() {
+  filterClients();
+});
+
+$('#employeeFilter').on('change', function() {
+  filterClients();
+});
+
+$('#searchClient').on('input', function() {
+  filterClients();
+});
+
+function filterClients() {
+  var statusFilter = $('#statusFilter').val();
+  var employeeFilter = $('#employeeFilter').val();
+  var searchTerm = $('#searchClient').val().toLowerCase();
+  
+  filteredClients = allClients.filter(function(client) {
+    var statusMatch = !statusFilter || client.status === statusFilter;
+    var employeeMatch = !employeeFilter || client.assigned_to_id == employeeFilter;
+    var searchMatch = !searchTerm || 
+      client.name.toLowerCase().includes(searchTerm) ||
+      client.phone.toLowerCase().includes(searchTerm) ||
+      (client.area && client.area.toLowerCase().includes(searchTerm));
+    
+    return statusMatch && employeeMatch && searchMatch;
+  });
+  
+  displayClients();
+}
+
+// Add new client
+$('#addClientBtn').on('click', function() {
+  $('#clientForm')[0].reset();
+  $('#clientId').val('');
+  $('#addEditClientModalLabel').html('<i class="bi bi-person-plus me-2 text-success"></i>Add New Client');
+  $('#addEditClientModal').modal('show');
+});
+
+// Save client form
+$('#clientForm').on('submit', function(e) {
+  e.preventDefault();
+  var formData = new FormData(this);
+  var clientId = $('#clientId').val();
+  
+  var url = clientId ? '/admin/clients/update/' + clientId : '/admin/clients/add';
+  
+  $.ajax({
+    url: url,
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    success: function(resp) {
+      if (resp.success) {
+        $('#addEditClientModal').modal('hide');
+        loadClients();
+        loadClientStatistics();
+        showToast('Success', resp.message, 'success');
+      } else {
+        showToast('Error', resp.error, 'danger');
+      }
+    },
+    error: function() {
+      showToast('Error', 'Failed to save client', 'danger');
+    }
+  });
+});
+
+// Edit client
+$(document).on('click', '.edit-client-btn', function() {
+  var clientId = $(this).data('id');
+  var client = allClients.find(c => c.id == clientId);
+  
+  if (client) {
+    $('#clientId').val(client.id);
+    $('#clientName').val(client.name);
+    $('#clientPhone').val(client.phone);
+    $('#clientBudget').val(client.budget);
+    $('#clientArea').val(client.area);
+    $('#clientBuilding').val(client.preferred_building);
+    $('#clientStatus').val(client.status);
+    $('#clientEmployee').val(client.assigned_to_id);
+    $('#clientNotes').val(client.notes);
+    
+    $('#addEditClientModalLabel').html('<i class="bi bi-pencil-square me-2 text-warning"></i>Edit Client');
+    $('#addEditClientModal').modal('show');
+  }
+});
+
+// View client details
+$(document).on('click', '.view-client-btn', function() {
+  var clientId = $(this).data('id');
+  
+  $.getJSON('/admin/clients/details/' + clientId, function(data) {
+    var content = `
+      <div class="row">
+        <div class="col-md-6">
+          <h6 class="fw-bold">Client Information</h6>
+          <table class="table table-borderless">
+            <tr><td><strong>Name:</strong></td><td>${data.name}</td></tr>
+            <tr><td><strong>Phone:</strong></td><td>${data.phone}</td></tr>
+            <tr><td><strong>Budget:</strong></td><td>${data.budget || '-'}</td></tr>
+            <tr><td><strong>Area:</strong></td><td>${data.area || '-'}</td></tr>
+            <tr><td><strong>Preferred Building:</strong></td><td>${data.preferred_building || '-'}</td></tr>
+          </table>
+        </div>
+        <div class="col-md-6">
+          <h6 class="fw-bold">Status & Assignment</h6>
+          <table class="table table-borderless">
+            <tr><td><strong>Status:</strong></td><td>${getStatusBadge(data.status)}</td></tr>
+            <tr><td><strong>Assigned To:</strong></td><td>${data.assigned_to}</td></tr>
+            <tr><td><strong>Created:</strong></td><td>${data.created_at}</td></tr>
+            <tr><td><strong>Notes:</strong></td><td>${data.notes || '-'}</td></tr>
+          </table>
+        </div>
+      </div>
+    `;
+    $('#clientDetailsContent').html(content);
+    $('#clientDetailsModal').modal('show');
+  });
+});
+
+// Delete client
+$(document).on('click', '.delete-client-btn', function() {
+  var clientId = $(this).data('id');
+  var client = allClients.find(c => c.id == clientId);
+  
+  if (confirm('Are you sure you want to delete client "' + client.name + '"? This action cannot be undone.')) {
+    $.post('/admin/clients/delete/' + clientId, function(resp) {
+      if (resp.success) {
+        loadClients();
+        loadClientStatistics();
+        showToast('Success', resp.message, 'success');
+      } else {
+        showToast('Error', resp.error, 'danger');
+      }
+    });
+  }
+});
+
+// Export clients
+$('#exportClientsCsv').on('click', function() {
+  window.location.href = '/admin/clients/export/csv';
+});
+
+$('#exportClientsExcel').on('click', function() {
+  window.location.href = '/admin/clients/export/excel';
+});
+
+// Update client counts
+function updateClientCounts() {
+  var counts = {
+    total: allClients.length,
+    prospects: allClients.filter(c => c.status === 'prospect').length,
+    interested: allClients.filter(c => c.status === 'interested').length,
+    scheduled: allClients.filter(c => c.status === 'visit_scheduled').length,
+    booked: allClients.filter(c => c.status === 'booked').length,
+    paid: allClients.filter(c => c.status === 'paid').length
+  };
+  
+  $('#totalClientsCount').text(counts.total);
+  $('#prospectsCount').text(counts.prospects);
+  $('#interestedCount').text(counts.interested);
+  $('#scheduledCount').text(counts.scheduled);
+  $('#bookedCount').text(counts.booked);
+  $('#paidCount').text(counts.paid);
+}
+
+// Advanced Analytics JavaScript
+let analyticsCharts = {};
+
+// Load advanced analytics modal
+$('#openAdvancedAnalyticsModal').on('click', function() {
+  $('#advancedAnalyticsModal').modal('show');
+  loadPerformanceData();
+});
+
+// Load performance data
+function loadPerformanceData() {
+  $.getJSON('/admin/analytics/performance', function(data) {
+    displayPerformanceTable(data);
+    createPerformanceChart(data);
+  });
+}
+
+// Display performance table
+function displayPerformanceTable(data) {
+  var tbody = $('#performanceTable tbody');
+  tbody.empty();
+  
+  data.forEach(function(emp) {
+    var tr = $('<tr></tr>');
+    tr.append('<td><strong>' + emp.employee + '</strong></td>');
+    tr.append('<td>' + emp.total_clients + '</td>');
+    tr.append('<td>' + emp.booked + '</td>');
+    tr.append('<td>' + emp.paid + '</td>');
+    tr.append('<td><span class="badge bg-' + (emp.conversion_rate > 50 ? 'success' : emp.conversion_rate > 25 ? 'warning' : 'danger') + '">' + emp.conversion_rate + '%</span></td>');
+    tbody.append(tr);
+  });
+}
+
+// Create performance chart
+function createPerformanceChart(data) {
+  var ctx = document.getElementById('performanceChart').getContext('2d');
+  if (analyticsCharts.performance) analyticsCharts.performance.destroy();
+  
+  analyticsCharts.performance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.map(d => d.employee),
+      datasets: [{
+        label: 'Total Clients',
+        data: data.map(d => d.total_clients),
+        backgroundColor: 'rgba(54, 162, 235, 0.7)'
+      }, {
+        label: 'Paid Clients',
+        data: data.map(d => d.paid),
+        backgroundColor: 'rgba(75, 192, 192, 0.7)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: {
+              size: 10
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            font: {
+              size: 10
+            }
+          }
+        },
+        x: {
+          ticks: {
+            font: {
+              size: 10
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Load trends data
+$('#trends-tab').on('click', function() {
+  $.getJSON('/admin/analytics/trends/detailed', function(data) {
+    createTrendsChart(data);
+    displayTrendsSummary(data);
+  });
+  
+  $.getJSON('/admin/analytics/status-breakdown', function(data) {
+    createStatusChart(data);
+  });
+});
+
+// Create trends chart
+function createTrendsChart(data) {
+  var ctx = document.getElementById('trendsChart').getContext('2d');
+  if (analyticsCharts.trends) analyticsCharts.trends.destroy();
+  
+  analyticsCharts.trends = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.map(d => d.month),
+      datasets: [{
+        label: 'New Clients',
+        data: data.map(d => d.new_clients),
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        tension: 0.4
+      }, {
+        label: 'Booked Clients',
+        data: data.map(d => d.booked),
+        borderColor: 'rgba(255, 206, 86, 1)',
+        backgroundColor: 'rgba(255, 206, 86, 0.2)',
+        tension: 0.4
+      }, {
+        label: 'Paid Clients',
+        data: data.map(d => d.paid),
+        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        tension: 0.4
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: {
+              size: 10
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: {
+            font: {
+              size: 10
+            }
+          }
+        },
+        x: {
+          ticks: {
+            font: {
+              size: 10
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Create status breakdown chart
+function createStatusChart(data) {
+  var ctx = document.getElementById('statusChart').getContext('2d');
+  if (analyticsCharts.status) analyticsCharts.status.destroy();
+  
+  var labels = Object.keys(data);
+  var values = Object.values(data);
+  var colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'];
+  
+  analyticsCharts.status = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: values,
+        backgroundColor: colors.slice(0, labels.length)
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: {
+              size: 10
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Display trends summary
+function displayTrendsSummary(data) {
+  var totalNew = data.reduce((sum, d) => sum + d.new_clients, 0);
+  var totalBooked = data.reduce((sum, d) => sum + d.booked, 0);
+  var totalPaid = data.reduce((sum, d) => sum + d.paid, 0);
+  var avgNew = totalNew / data.length;
+  var avgBooked = totalBooked / data.length;
+  var avgPaid = totalPaid / data.length;
+  
+  var summary = `
+    <div class="card bg-info text-white mb-3">
+      <div class="card-body text-center">
+        <h6>Avg New Clients/Month</h6>
+        <h4>${avgNew.toFixed(1)}</h4>
+      </div>
+    </div>
+    <div class="card bg-warning text-white mb-3">
+      <div class="card-body text-center">
+        <h6>Avg Booked/Month</h6>
+        <h4>${avgBooked.toFixed(1)}</h4>
+      </div>
+    </div>
+    <div class="card bg-success text-white">
+      <div class="card-body text-center">
+        <h6>Avg Paid/Month</h6>
+        <h4>${avgPaid.toFixed(1)}</h4>
+      </div>
+    </div>
+  `;
+  
+  $('#trendsSummary').html(summary);
+}
+
+// Load employee comparison data
+$('#comparison-tab').on('click', function() {
+  $.getJSON('/admin/analytics/employee-comparison', function(data) {
+    createComparisonChart(data);
+    displayComparisonSummary(data);
+  });
+});
+
+// Create comparison chart
+function createComparisonChart(data) {
+  var ctx = document.getElementById('comparisonChart').getContext('2d');
+  if (analyticsCharts.comparison) analyticsCharts.comparison.destroy();
+  
+  analyticsCharts.comparison = new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: data.map(d => d.employee),
+      datasets: [{
+        label: 'Success Rate (%)',
+        data: data.map(d => d.success_rate),
+        borderColor: 'rgba(255, 99, 132, 1)',
+        backgroundColor: 'rgba(255, 99, 132, 0.2)'
+      }, {
+        label: 'Total Clients',
+        data: data.map(d => d.total_clients),
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            font: {
+              size: 10
+            }
+          }
+        }
+      },
+      scales: {
+        r: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            font: {
+              size: 10
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+// Display comparison summary
+function displayComparisonSummary(data) {
+  var topPerformer = data.reduce((max, emp) => emp.success_rate > max.success_rate ? emp : max);
+  var avgSuccessRate = data.reduce((sum, emp) => sum + emp.success_rate, 0) / data.length;
+  
+  var summary = `
+    <div class="card bg-warning text-white mb-3">
+      <div class="card-body text-center">
+        <h6>Top Performer</h6>
+        <h4>${topPerformer.employee}</h4>
+        <small>${topPerformer.success_rate}% Success Rate</small>
+      </div>
+    </div>
+    <div class="card bg-info text-white mb-3">
+      <div class="card-body text-center">
+        <h6>Average Success Rate</h6>
+        <h4>${avgSuccessRate.toFixed(1)}%</h4>
+      </div>
+    </div>
+    <div class="card bg-success text-white">
+      <div class="card-body text-center">
+        <h6>Total Employees</h6>
+        <h4>${data.length}</h4>
+      </div>
+    </div>
+  `;
+  
+  $('#comparisonSummary').html(summary);
+}
+
+// Load reports data
+$('#reports-tab').on('click', function() {
+  $.getJSON('/admin/reports/generate', function(data) {
+    displayReport(data);
+  });
+});
+
+// Display comprehensive report
+function displayReport(data) {
+  var reportHtml = `
+    <div class="row">
+      <div class="col-md-6">
+        <div class="card mb-3">
+          <div class="card-header bg-primary text-white">
+            <h6 class="mb-0"><i class="bi bi-info-circle me-2"></i>Business Summary</h6>
+          </div>
+          <div class="card-body">
+            <table class="table table-borderless">
+              <tr><td><strong>Total Clients:</strong></td><td>${data.summary.total_clients}</td></tr>
+              <tr><td><strong>Total Employees:</strong></td><td>${data.summary.total_employees}</td></tr>
+              <tr><td><strong>Total Admins:</strong></td><td>${data.summary.total_admins}</td></tr>
+              <tr><td><strong>Total Partners:</strong></td><td>${data.summary.total_partners}</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card mb-3">
+          <div class="card-header bg-success text-white">
+            <h6 class="mb-0"><i class="bi bi-graph-up me-2"></i>Client Status Breakdown</h6>
+          </div>
+          <div class="card-body">
+            <table class="table table-borderless">
+              ${Object.entries(data.client_status).map(([status, count]) => 
+                `<tr><td><strong>${status.charAt(0).toUpperCase() + status.slice(1)}:</strong></td><td>${count}</td></tr>`
+              ).join('')}
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header bg-info text-white">
+            <h6 class="mb-0"><i class="bi bi-clock-history me-2"></i>Recent Activity</h6>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-sm">
+                <thead>
+                  <tr>
+                    <th>Time</th>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Details</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${data.recent_activity.map(activity => 
+                    `<tr>
+                      <td>${activity.timestamp}</td>
+                      <td>${activity.user || 'System'}</td>
+                      <td>${activity.action}</td>
+                      <td>${activity.details || '-'}</td>
+                    </tr>`
+                  ).join('')}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-3 text-muted">
+      <small><i class="bi bi-calendar me-1"></i>Report generated on ${data.generated_at}</small>
+    </div>
+  `;
+  
+  $('#reportContent').html(reportHtml);
+}
 </script>
 </body>
-</html>
- 
+</html> 

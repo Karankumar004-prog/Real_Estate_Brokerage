@@ -110,9 +110,15 @@ def register():
         
         # Set status and notification logic
         if role == 'admin':
-            user.status = 'pending'
-            notif_msg = f"{username} trying to register as an Admin. Authorization is valid?"
-            notif_type = 'admin_pending'
+            # Prevent Admin1 from being registered with pending status
+            if username == 'Admin1':
+                user.status = 'approved'
+                notif_msg = f"{username} has registered as an Admin"
+                notif_type = 'admin_registered'
+            else:
+                user.status = 'pending'
+                notif_msg = f"{username} trying to register as an Admin. Authorization is valid?"
+                notif_type = 'admin_pending'
         else:
             user.status = 'approved'
             notif_msg = f"{username} has registered as an Employee"
