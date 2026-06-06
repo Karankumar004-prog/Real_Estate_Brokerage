@@ -73,7 +73,7 @@ Real_Estate_Brokerage/
 ### 1. Clone the Repository
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/Karankumar004-prog/Real_Estate_Brokerage
 cd Real_Estate_Brokerage
 ```
 
